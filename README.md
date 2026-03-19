@@ -1,6 +1,22 @@
-# xLoop — eXpert Loop Claude Harness
+<p align="center">
+  <img src="assets/banner.png" alt="xLoop Banner" width="720" />
+</p>
 
-멀티소스 리서치를 자동화하는 Claude Code 하네스.
+<h1 align="center">xLoop</h1>
+
+<p align="center">
+  <strong>eXpert Loop Claude Harness</strong><br>
+  멀티소스 리서치를 자동화하는 Claude Code 하네스
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/claude_code-harness-blueviolet" alt="Claude Code">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+</p>
+
+---
+
 YouTube, 웹, arXiv, Reddit/HN에서 검색하고, NotebookLM으로 심층 분석한 뒤, 갭을 찾아 반복 검색하는 **Expert Loop** 파이프라인을 제공합니다.
 
 ## 핵심 컨셉
@@ -109,39 +125,6 @@ setup.sh가 수행하는 작업:
 | `--time d\|w\|m\|y` | year | 기간 필터 |
 | `--json` | - | JSON 출력 |
 
-## 프로젝트 구조
-
-```
-xLoop/
-├── commands/              ← Claude Code 슬래시 커맨드 (13개)
-│   ├── expert-loop.md     ← 핵심: Expert Loop 오케스트레이션
-│   ├── yt-search.md
-│   ├── web-search.md
-│   ├── arxiv-search.md
-│   ├── community-search.md
-│   ├── notebooklm-add.md
-│   ├── notebooklm-ask.md
-│   ├── research.md
-│   ├── session-new.md
-│   ├── session-list.md
-│   ├── session-resume.md
-│   └── session-summary.md
-├── scripts/               ← Python 검색·분석 스크립트
-│   ├── loop_engine.py     ← 루프 상태 관리 (시작/반복/종료/체크)
-│   ├── session_manager.py ← 세션 CRUD + 검색/소스/질문 기록
-│   ├── yt_search.py       ← YouTube 검색 (yt-dlp)
-│   ├── web_search.py      ← 웹 검색 (DuckDuckGo)
-│   ├── arxiv_search.py    ← arXiv 논문 검색
-│   ├── community_search.py← Reddit & Hacker News 검색
-│   ├── notebooklm_add.py  ← NotebookLM 노트북 생성 + 소스 추가
-│   └── notebooklm_ask.py  ← NotebookLM 질문/답변
-├── tests/                 ← pytest 테스트
-├── data/sessions/         ← 세션 데이터 (JSON)
-├── requirements.txt
-├── setup.sh
-└── README.md
-```
-
 ## Expert Loop 동작 원리
 
 ```
@@ -183,6 +166,40 @@ Step 7: 작업 카드 도출 (→ GitHub Issues)
 | 실전/구현/튜토리얼 | YouTube | 시각적 설명, 코드 워크스루 |
 | 비교/의견/경험 | Community | 현업 개발자 토론 |
 | 최신 동향/공식 문서 | Web | 블로그, 공식 문서 |
+
+## 프로젝트 구조
+
+```
+xLoop/
+├── commands/              ← Claude Code 슬래시 커맨드 (13개)
+│   ├── expert-loop.md     ← 핵심: Expert Loop 오케스트레이션
+│   ├── yt-search.md
+│   ├── web-search.md
+│   ├── arxiv-search.md
+│   ├── community-search.md
+│   ├── notebooklm-add.md
+│   ├── notebooklm-ask.md
+│   ├── research.md
+│   ├── session-new.md
+│   ├── session-list.md
+│   ├── session-resume.md
+│   └── session-summary.md
+├── scripts/               ← Python 검색·분석 스크립트
+│   ├── loop_engine.py     ← 루프 상태 관리 (시작/반복/종료/체크)
+│   ├── session_manager.py ← 세션 CRUD + 검색/소스/질문 기록
+│   ├── yt_search.py       ← YouTube 검색 (yt-dlp)
+│   ├── web_search.py      ← 웹 검색 (DuckDuckGo)
+│   ├── arxiv_search.py    ← arXiv 논문 검색
+│   ├── community_search.py← Reddit & Hacker News 검색
+│   ├── notebooklm_add.py  ← NotebookLM 노트북 생성 + 소스 추가
+│   └── notebooklm_ask.py  ← NotebookLM 질문/답변
+├── tests/                 ← pytest 테스트
+├── data/sessions/         ← 세션 데이터 (JSON)
+├── assets/                ← 이미지 등 정적 리소스
+├── requirements.txt
+├── setup.sh
+└── README.md
+```
 
 ## 개발
 
