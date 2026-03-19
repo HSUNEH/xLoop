@@ -87,6 +87,9 @@ async def add_to_notebook(title: str, urls: list[str]) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+    except Exception as exc:
+        print(f"Error: NotebookLM operation failed: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 def main() -> None:

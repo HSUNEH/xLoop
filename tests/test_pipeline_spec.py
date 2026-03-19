@@ -1,6 +1,5 @@
 """Tests for pipeline_spec module."""
 
-import json
 import sys
 from pathlib import Path
 

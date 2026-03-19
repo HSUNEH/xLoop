@@ -131,7 +131,16 @@ def execute_task(task, session_id):
 
     log_progress(session_id, "execution", f"Running {task_id} with {tool_name}")
 
-    result = retry_with_skip(fn, args=(task, session_id), max_retries=2, timeout=30)
+    try:
+        result = retry_with_skip(fn, args=(task, session_id), max_retries=2, timeout=30)
+    except Exception as exc:
+        log_progress(session_id, "execution", f"Exception: {task_id}: {exc}", level="error")
+        return {
+            "task_id": task_id,
+            "tool": tool_name,
+            "status": "failed",
+            "error": str(exc),
+        }
 
     if result is None:
         log_progress(session_id, "execution", f"Failed: {task_id}", level="error")

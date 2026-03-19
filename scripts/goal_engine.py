@@ -98,7 +98,7 @@ def check_goal_termination(session_id: str, spec: dict) -> dict:
     Termination: ambiguity <= 0.2 AND all required fields filled.
     Returns {should_terminate, reason, ambiguity}.
     """
-    from scripts.pipeline_spec import validate_spec, calculate_ambiguity
+    from pipeline_spec import validate_spec
 
     validation = validate_spec(spec)
     ambiguity = validation["ambiguity"]
@@ -226,10 +226,14 @@ def _parse_cli(argv: list[str]) -> None:
             )
             sys.exit(1)
         kv = _parse_kv_args(argv[3:])
-        questions = json.loads(kv.get("questions-json", "[]"))
-        responses = json.loads(kv.get("responses-json", "[]"))
-        spec_updates = json.loads(kv.get("spec-updates-json", "{}"))
-        ambiguity = float(kv.get("ambiguity", "1.0"))
+        try:
+            questions = json.loads(kv.get("questions-json", "[]"))
+            responses = json.loads(kv.get("responses-json", "[]"))
+            spec_updates = json.loads(kv.get("spec-updates-json", "{}"))
+            ambiguity = float(kv.get("ambiguity", "1.0"))
+        except (json.JSONDecodeError, ValueError) as exc:
+            print(f"Error: invalid argument format: {exc}", file=sys.stderr)
+            sys.exit(1)
         state = add_goal_iteration(
             argv[2],
             questions=questions,
@@ -243,7 +247,7 @@ def _parse_cli(argv: list[str]) -> None:
         if len(argv) < 3:
             print("Usage: goal_engine.py check <session_id>", file=sys.stderr)
             sys.exit(1)
-        from scripts.pipeline_spec import load_spec
+        from pipeline_spec import load_spec
         spec = load_spec(argv[2])
         result = check_goal_termination(argv[2], spec)
         terminate = "Yes" if result["should_terminate"] else "No"

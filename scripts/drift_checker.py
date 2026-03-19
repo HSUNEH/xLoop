@@ -53,7 +53,7 @@ def decide_action(drift_score):
     Returns:
         str: "complete" | "backtrack" | "restart"
     """
-    if drift_score == 0.0:
+    if drift_score < 1e-9:
         return "complete"
     if drift_score <= DRIFT_THRESHOLD:
         return "backtrack"
@@ -98,8 +98,11 @@ def execute_backtrack(session_id):
 
     deleted = None
     if strategy_path.exists():
-        strategy_path.unlink()
-        deleted = str(strategy_path)
+        try:
+            strategy_path.unlink()
+            deleted = str(strategy_path)
+        except OSError as exc:
+            print(f"strategy.json 삭제 실패: {exc}", file=sys.stderr)
 
     return {
         "action": "backtrack",

@@ -26,7 +26,8 @@ def _make_session_id() -> str:
         candidate = f"{base}_{suffix}"
         if not (sessions_dir / f"{candidate}.json").exists():
             return candidate
-    return base  # fallback (극히 드문 경우)
+    import uuid
+    return f"{base}_{uuid.uuid4().hex[:8]}"
 
 
 def _now_iso() -> str:

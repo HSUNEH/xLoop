@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from pal_router import (
     DEFAULT_PHASE_TIERS,
     MODEL_TIERS,
-    PHASE_NAMES,
     estimate_cost,
     get_model_for_phase,
     get_tier_config,

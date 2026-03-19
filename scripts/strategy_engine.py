@@ -40,7 +40,7 @@ def _diverge(findings):
 
 def _extract_title(finding):
     """Finding 텍스트에서 짧은 제목을 추출."""
-    text = finding.strip()
+    text = str(finding).strip()
     # 첫 문장 또는 50자까지
     for sep in [".", "。", "\n"]:
         idx = text.find(sep)

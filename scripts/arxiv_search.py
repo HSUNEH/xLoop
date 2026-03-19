@@ -97,9 +97,9 @@ def search_arxiv(query, count, sort):
             "title": r.title,
             "url": r.entry_id,
             "pdf_url": r.pdf_url,
-            "authors": ", ".join(a.name for a in r.authors[:5])
-            + (" et al." if len(r.authors) > 5 else ""),
-            "abstract": r.summary[:200].replace("\n", " ") + ("..." if len(r.summary) > 200 else ""),
+            "authors": ", ".join(a.name for a in (r.authors or [])[:5])
+            + (" et al." if len(r.authors or []) > 5 else ""),
+            "abstract": ((r.summary or "")[:200].replace("\n", " ") + ("..." if len(r.summary or "") > 200 else "")),
             "date": r.published.strftime("%b %d, %Y") if r.published else "N/A",
             "categories": ", ".join(r.categories),
         })

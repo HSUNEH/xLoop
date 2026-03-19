@@ -116,6 +116,8 @@ def _fetch_json(url):
         raise RuntimeError(f"HTTP {e.code}: {e.reason}") from e
     except urllib.error.URLError as e:
         raise RuntimeError(f"Connection failed: {e.reason}") from e
+    except OSError as e:
+        raise RuntimeError(f"Network error: {e}") from e
 
 
 TIME_MAP_REDDIT = {"d": "day", "w": "week", "m": "month", "y": "year"}

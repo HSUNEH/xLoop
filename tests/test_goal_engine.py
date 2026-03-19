@@ -14,7 +14,7 @@ from goal_engine import (
     get_next_questions,
     start_goal_loop,
 )
-from pipeline_spec import create_spec, save_spec
+from pipeline_spec import create_spec
 
 
 class TestStartGoalLoop:

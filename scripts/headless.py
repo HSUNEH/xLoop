@@ -85,6 +85,7 @@ def retry_with_skip(fn, args=None, kwargs=None, max_retries=2, timeout=30):
     args = args or ()
     kwargs = kwargs or {}
     last_error = None
+    elapsed = 0
 
     for attempt in range(1 + max_retries):
         try:
@@ -92,7 +93,11 @@ def retry_with_skip(fn, args=None, kwargs=None, max_retries=2, timeout=30):
         except Exception as exc:
             last_error = exc
             if attempt < max_retries:
-                time.sleep(min(2 ** attempt, timeout))
+                delay = min(2 ** attempt, timeout - elapsed)
+                if delay <= 0:
+                    break
+                time.sleep(delay)
+                elapsed += delay
 
     # All retries exhausted
     print(

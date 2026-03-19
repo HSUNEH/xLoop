@@ -195,7 +195,7 @@ def _validate_against_schema(data, schema, name) -> dict:
     """Generic validator: check required fields."""
     missing = []
     for field in schema["required"]:
-        if field not in data or data[field] is None:
+        if field not in data or data[field] is None or data[field] == "":
             missing.append(field)
 
     return {

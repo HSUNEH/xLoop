@@ -530,30 +530,62 @@ main() {
         validate_handoff "$phase_num" "$next_phase"
     done
 
-    # Phase 5: Drift Check
+    # Phase 5: Drift Check (with backtrack loop)
+    local MAX_BACKTRACKS=3
+    local backtrack_count=0
+
     if is_phase_active 5; then
-        log "--- Phase 5: Drift Check ---"
-        get_model_for_phase 5
-        log_phase_progress "phase5" "드리프트 검사 시작" "info"
+        while true; do
+            log "--- Phase 5: Drift Check ---"
+            get_model_for_phase 5
+            log_phase_progress "phase5" "드리프트 검사 시작" "info"
 
-        local drift_result=0
-        run_phase5 || drift_result=$?
+            local drift_result=0
+            run_phase5 || drift_result=$?
 
-        if [ "$drift_result" -eq 1 ]; then
-            # Drift > 0.3 → Phase 0 return
-            alert "파이프라인 중단" \
-                "드리프트 초과 — Phase 0 복귀 필요, 세션: $SESSION_ID"
-            exit 2
-        elif [ "$drift_result" -eq 2 ]; then
-            # Backtrack to Phase 2
-            log "Backtracking to Phase 2 (Strategy)"
-            alert "백트래킹" \
-                "Phase 2 (Strategy) 재실행, 세션: $SESSION_ID"
-            # Re-run phases 2~4 + drift check
-            # (In production, this would loop; for now, single backtrack)
-            log "NOTE: Re-run pipeline_runner.sh to execute backtrack"
-            exit 3
-        fi
+            if [ "$drift_result" -eq 0 ]; then
+                break
+            elif [ "$drift_result" -eq 1 ]; then
+                # Drift > 0.3 → Phase 0 return
+                alert "파이프라인 중단" \
+                    "드리프트 초과 — Phase 0 복귀 필요, 세션: $SESSION_ID"
+                exit 2
+            elif [ "$drift_result" -eq 2 ]; then
+                backtrack_count=$((backtrack_count + 1))
+                if [ "$backtrack_count" -ge "$MAX_BACKTRACKS" ]; then
+                    log "ERROR: Max backtracks ($MAX_BACKTRACKS) reached"
+                    alert "파이프라인 중단" \
+                        "백트래킹 횟수 초과 ($MAX_BACKTRACKS회), 세션: $SESSION_ID"
+                    exit 4
+                fi
+
+                log "Backtracking to Phase 2 (attempt $backtrack_count/$MAX_BACKTRACKS)"
+                alert "백트래킹" \
+                    "Phase 2 재실행 ($backtrack_count/$MAX_BACKTRACKS), 세션: $SESSION_ID"
+
+                # Re-run phases 2~4
+                for bt_entry in "2:Strategy:run_phase2" "3:Execution:run_phase3" "4:Evaluation:run_phase4"; do
+                    IFS=':' read -r bt_num bt_name bt_fn <<< "$bt_entry"
+                    get_model_for_phase "$bt_num"
+                    if ! run_phase_cmd "$bt_name" "$bt_num" "$bt_fn"; then
+                        log "ERROR: Phase $bt_num ($bt_name) failed during backtrack"
+                        alert "백트래킹 실패" \
+                            "Phase $bt_num ($bt_name) 실패, 세션: $SESSION_ID"
+                        exit 1
+                    fi
+                    local bt_next=$((bt_num + 1))
+                    local bt_output
+                    case "$bt_num" in
+                        2) bt_output="strategy.json" ;;
+                        3) bt_output="execution.json" ;;
+                        4) bt_output="validation.json" ;;
+                    esac
+                    create_handoff "$bt_num" "$bt_next" "$bt_output" "{}"
+                    validate_handoff "$bt_num" "$bt_next"
+                done
+                # Loop continues to drift check again
+            fi
+        done
     else
         log "Phase 5 (Drift Check): SKIPPED (not in active_phases)"
     fi

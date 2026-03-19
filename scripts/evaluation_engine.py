@@ -98,7 +98,7 @@ def run_stage2(spec, execution):
     # Deliverable coverage
     if deliverables:
         artifact_texts = " ".join(
-            str(a.get("artifact", {}).get("output", ""))
+            str(a.get("artifact", {}).get("output", "") if isinstance(a.get("artifact"), dict) else a.get("artifact", ""))
             + " " + str(a.get("task_id", ""))
             for a in artifacts
         ).lower()

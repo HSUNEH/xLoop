@@ -207,7 +207,7 @@ def detect_stagnation(session_id: str) -> dict:
     prev_findings = set(prev.get("findings", []))
     curr_findings = set(curr.get("findings", []))
     if curr_findings and prev_findings:
-        overlap = len(curr_findings & prev_findings) / max(len(curr_findings), 1)
+        overlap = len(curr_findings & prev_findings) / max(len(curr_findings), len(prev_findings), 1)
         if overlap > 0.5:
             indicators.append("findings_overlap")
 

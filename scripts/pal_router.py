@@ -159,7 +159,11 @@ def _parse_cli(argv):
         if len(argv) < 3:
             print("Usage: pal_router.py route <phase_num> [--session <session_id>]", file=sys.stderr)
             sys.exit(1)
-        phase = int(argv[2])
+        try:
+            phase = int(argv[2])
+        except ValueError:
+            print(f"Error: phase must be integer, got '{argv[2]}'", file=sys.stderr)
+            sys.exit(1)
         spec = None
         if "--session" in argv:
             idx = argv.index("--session")
