@@ -1,12 +1,12 @@
 <h1 align="center">xLoop</h1>
 
 <p align="center">
-  <strong>eXpert Loop Claude Harness</strong><br>
-  멀티소스 리서치를 자동화하는 Claude Code 하네스
+  <strong>eXpert Loop — 6-Phase 프로덕션 파이프라인 오케스트레이터</strong><br>
+  Claude Code 기반 멀티소스 딥 리서치 & 콘텐츠 프로덕션 자동화
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/claude_code-harness-blueviolet" alt="Claude Code">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
 </p>
@@ -21,15 +21,41 @@
 
 ---
 
-xLoop은 YouTube, 웹, arXiv, Reddit/HN에서 검색하고, NotebookLM으로 심층 분석한 뒤, 갭을 찾아 반복 검색하는 **Expert Loop** 파이프라인을 제공합니다.
+xLoop은 목표 정의부터 리서치, 전략, 실행, 평가, 드리프트 보정까지 자동화하는 **6-Phase 프로덕션 파이프라인 오케스트레이터**입니다. Claude Code 슬래시 커맨드로 전체 파이프라인을 제어합니다.
 
-## 핵심 컨셉
+## 6-Phase 파이프라인
 
 ```
-검색 → 소스 수집 → NotebookLM 분석 → 갭 탐지 → 재검색 → ... → 최종 보고서
+Phase 0        Phase 1        Phase 2        Phase 3        Phase 4        Phase 5
+Big Bang  -->  Research  -->  Strategy  -->  Execution -->  Evaluation --> Drift Check
+(목표 정의)    (리서치)       (전략 수립)    (실행)         (검증)         (보정)
+   |                                                             |              |
+   |              spec.json → research.json → strategy.json → execution.json → validation.json
+   |                                                                            |
+   +<---------- drift > 0.3: 재시작 --------<---------<---------<--------------+
+                 drift ≤ 0.3: Phase 2로 백트래킹
 ```
 
-Expert Loop는 한 번의 검색으로 끝내지 않습니다. AI가 분석 결과에서 **빠진 관점(갭)**을 찾아내고, 갭 유형에 맞는 최적 소스에서 재검색하여 주제를 점진적으로 깊게 커버합니다.
+### Phase 상세
+
+| Phase | 커맨드 | 모듈 | 출력 |
+|-------|--------|------|------|
+| 0 — Big Bang | `/big-bang` | `goal_engine.py`, `pipeline_spec.py` | `spec.json` |
+| 1 — Research | `/expert-loop` | `loop_engine.py`, 검색 스크립트 | `research.json` |
+| 2 — Strategy | `/strategy-build` | `strategy_engine.py` | `strategy.json` |
+| 3 — Execution | `/execute` | `execution_engine.py` | `execution.json` |
+| 4 — Evaluation | `/validate` | `evaluation_engine.py` | `validation.json` |
+| 5 — Drift Check | (자동) | `drift_checker.py` | 행동 결정 |
+
+### 핵심 메커니즘
+
+- **Ambiguity Gate** (Phase 0): 모호성 점수 ≤ 0.2 이하가 될 때까지 목표 구체화 루프
+- **Resilience** (Phase 1): 정체 감지 + 페르소나 전환 (Researcher → Hacker → Contrarian → Simplifier)
+- **Double Diamond** (Phase 2): 발산 (후보 생성) → 수렴 (제약조건 필터링)
+- **Tool Registry** (Phase 3): 플러그인 방식 도구 실행 (dall-e, flux 등)
+- **B+C Drift Measurement** (Phase 4): 3단계 검증 (기계적 → 의미적 → 합의: 옹호자/비판자/판사)
+- **PAL Router**: Phase별 모델 티어 라우팅 (frugal 1x / standard 10x / frontier 30x)
+- **Headless Execution**: 자동 소스 선택, 재시도+건너뛰기, 구조화 로깅, 웹훅 알림
 
 ## 설치
 
@@ -49,7 +75,7 @@ setup.sh가 수행하는 작업:
 
 ## 요구사항
 
-- Python 3.11+
+- Python 3.10+
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — YouTube 검색
 - [notebooklm-py](https://github.com/nichochar/notebooklm-py) — NotebookLM 연동
 - [Playwright](https://playwright.dev/) — 브라우저 자동화
@@ -58,161 +84,131 @@ setup.sh가 수행하는 작업:
 
 ## 사용법
 
-### Expert Loop (전체 파이프라인)
+### 전체 파이프라인
 
+```bash
+# 1. 목표 정의 (대화형)
+/big-bang
+
+# 2. 전체 파이프라인 실행
+bash scripts/pipeline_runner.sh <session_id>
+
+# 또는 Phase별 개별 실행:
+/expert-loop --session <session_id>    # Phase 1
+/strategy-build --session <session_id> # Phase 2
+/execute --session <session_id>        # Phase 3
+/validate --session <session_id>       # Phase 4
 ```
-/expert-loop "AI agents" --max-iterations 3
-```
 
-세션 생성 → 멀티소스 검색 → NotebookLM 분석 → 갭 탐지 → 재검색 반복 → 최종 보고서 → 작업 카드 도출까지 자동으로 진행합니다.
+### 파이프라인 커맨드
 
-### 개별 커맨드
+| 커맨드 | Phase | 설명 |
+|--------|-------|------|
+| `/big-bang` | 0 | 목표, 산출물, 성공 기준 정의 |
+| `/expert-loop` | 1 | 멀티소스 딥 리서치 루프 |
+| `/strategy-build` | 2 | 리서치 기반 실행 전략 생성 |
+| `/execute` | 3 | 도구 레지스트리를 통한 태스크 실행 |
+| `/validate` | 4 | 3단계 검증 + 드리프트 점수 |
+
+### 검색 커맨드
 
 | 커맨드 | 설명 | 예시 |
 |--------|------|------|
-| `/yt-search` | YouTube 영상 검색 | `/yt-search "transformer" --count 5` |
+| `/yt-search` | YouTube 검색 | `/yt-search "transformer" --count 5` |
 | `/web-search` | 웹 검색 (DuckDuckGo) | `/web-search "AI framework" --time w` |
 | `/arxiv-search` | arXiv 논문 검색 | `/arxiv-search "attention mechanism" --sort date` |
 | `/community-search` | Reddit & HN 검색 | `/community-search all "LLM deploy" --min-score 50` |
-| `/notebooklm-add` | NotebookLM에 소스 추가 | `/notebooklm-add "리서치" URL1 URL2` |
-| `/notebooklm-ask` | NotebookLM에 질문 | `/notebooklm-ask <notebook_id> "핵심 요약"` |
-| `/research` | 리서치 세션 관리 | `/research` |
 
-### 세션 관리
+### 세션 & NotebookLM
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/session-new` | 새 리서치 세션 생성 |
+| `/session-new` | 새 세션 생성 |
 | `/session-list` | 세션 목록 조회 |
 | `/session-resume` | 기존 세션 이어하기 |
 | `/session-summary` | 세션 요약 보기 |
+| `/notebooklm-add` | NotebookLM에 소스 추가 |
+| `/notebooklm-ask` | NotebookLM에 질문 |
+| `/research` | 리서치 세션 관리 |
 
-## 검색 옵션
-
-### yt-search
-
-| 플래그 | 기본값 | 설명 |
-|--------|--------|------|
-| `--count N` | 20 | 결과 수 |
-| `--months N` | 6 | 최근 N개월 필터 |
-| `--no-date-filter` | - | 전체 기간 |
-| `--min-views N` | 0 | 최소 조회수 |
-| `--min-duration M` | 0 | 최소 길이 (분) |
-| `--max-duration M` | 0 | 최대 길이 (분) |
-| `--channel NAME` | - | 특정 채널만 |
-| `--json` | - | JSON 출력 |
-
-### web-search
-
-| 플래그 | 기본값 | 설명 |
-|--------|--------|------|
-| `--count N` | 10 | 결과 수 |
-| `--time d\|w\|m\|y` | - | 기간 필터 |
-| `--json` | - | JSON 출력 |
-
-### arxiv-search
-
-| 플래그 | 기본값 | 설명 |
-|--------|--------|------|
-| `--count N` | 10 | 결과 수 |
-| `--sort` | relevance | `relevance` 또는 `date` |
-| `--json` | - | JSON 출력 |
-
-### community-search
-
-| 플래그 | 기본값 | 설명 |
-|--------|--------|------|
-| 플랫폼 | (필수) | `reddit`, `hn`, `all` |
-| `--count N` | 10 | 결과 수 |
-| `--subreddit NAME` | - | 서브레딧 지정 |
-| `--min-score N` | 0 | 최소 점수 |
-| `--time d\|w\|m\|y` | year | 기간 필터 |
-| `--json` | - | JSON 출력 |
-
-## Expert Loop 동작 원리
-
-```
-Step 0: 세션 생성 + 루프 초기화
-    │
-    ▼
-┌─── 루프 시작 ──────────────────────────┐
-│                                         │
-│  Step 1: 멀티소스 검색 + 소스 수집       │
-│    → YouTube / Web / arXiv / Community  │
-│    → 사용자가 결과 선택                  │
-│    → NotebookLM에 추가                  │
-│                                         │
-│  Step 2: NotebookLM 심층 분석           │
-│    → 핵심 개념, 접근법, 트레이드오프     │
-│                                         │
-│  Step 3: 갭 분석 + 소스 매칭            │
-│    → 분석축: 이론/실전, 찬반, 기초/심화  │
-│    → 갭 유형별 최적 소스 추천            │
-│    → 새 검색 쿼리 생성                  │
-│                                         │
-│  Step 4: 종료 판단                      │
-│    → 최대 반복 도달 or 갭 없음 → 종료   │
-│    → 갭 남음 → Step 1로 반복            │
-│                                         │
-└─────────────────────────────────────────┘
-    │
-    ▼
-Step 5: 최종 분석 종합
-Step 6: 리서치 보고서 생성
-Step 7: 작업 카드 도출 (→ GitHub Issues)
-```
-
-### 갭→소스 매칭 전략
-
-| 갭 유형 | 추천 소스 | 이유 |
-|---------|----------|------|
-| 이론/학술/증명 | arXiv | 논문이 가장 정확 |
-| 실전/구현/튜토리얼 | YouTube | 시각적 설명, 코드 워크스루 |
-| 비교/의견/경험 | Community | 현업 개발자 토론 |
-| 최신 동향/공식 문서 | Web | 블로그, 공식 문서 |
-
-## 프로젝트 구조
+## 아키텍처
 
 ```
 xLoop/
-├── commands/              ← Claude Code 슬래시 커맨드 (13개)
-│   ├── expert-loop.md     ← 핵심: Expert Loop 오케스트레이션
-│   ├── yt-search.md
-│   ├── web-search.md
-│   ├── arxiv-search.md
-│   ├── community-search.md
-│   ├── notebooklm-add.md
-│   ├── notebooklm-ask.md
-│   ├── research.md
+├── commands/                <- Claude Code 슬래시 커맨드 (16개)
+│   ├── big-bang.md          <- Phase 0: 목표 정의
+│   ├── expert-loop.md       <- Phase 1: 리서치 루프
+│   ├── strategy-build.md    <- Phase 2: 전략 생성
+│   ├── execute.md           <- Phase 3: 태스크 실행
+│   ├── validate.md          <- Phase 4: 검증
+│   ├── yt-search.md         <- YouTube 검색
+│   ├── web-search.md        <- 웹 검색
+│   ├── arxiv-search.md      <- arXiv 검색
+│   ├── community-search.md  <- Reddit/HN 검색
+│   ├── notebooklm-add.md    <- NotebookLM 소스 추가
+│   ├── notebooklm-ask.md    <- NotebookLM 질의응답
+│   ├── research.md          <- 리서치 관리
 │   ├── session-new.md
 │   ├── session-list.md
 │   ├── session-resume.md
 │   └── session-summary.md
-├── scripts/               ← Python 검색·분석 스크립트
-│   ├── loop_engine.py     ← 루프 상태 관리 (시작/반복/종료/체크)
-│   ├── session_manager.py ← 세션 CRUD + 검색/소스/질문 기록
-│   ├── yt_search.py       ← YouTube 검색 (yt-dlp)
-│   ├── web_search.py      ← 웹 검색 (DuckDuckGo)
-│   ├── arxiv_search.py    ← arXiv 논문 검색
-│   ├── community_search.py← Reddit & Hacker News 검색
-│   ├── notebooklm_add.py  ← NotebookLM 노트북 생성 + 소스 추가
-│   └── notebooklm_ask.py  ← NotebookLM 질문/답변
-├── tests/                 ← pytest 테스트
-├── data/sessions/         ← 세션 데이터 (JSON)
-├── assets/                ← 이미지 등 정적 리소스
+├── scripts/                 <- Python 모듈 (17개)
+│   ├── pipeline_spec.py     <- Pipeline Spec (Phase 0 스키마)
+│   ├── goal_engine.py       <- 목표 구체화 루프
+│   ├── pipeline_schema.py   <- Phase 간 JSON 스키마 계약
+│   ├── pipeline_runner.sh   <- Phase 0→5 오케스트레이터
+│   ├── loop_engine.py       <- 리서치 루프 + 레질리언스
+│   ├── strategy_engine.py   <- 전략 생성 (Double Diamond)
+│   ├── execution_engine.py  <- 태스크 실행 + 도구 레지스트리
+│   ├── evaluation_engine.py <- 3단계 검증 (B+C 드리프트)
+│   ├── drift_checker.py     <- 드리프트 검사 + 백트래킹/재시작
+│   ├── pal_router.py        <- Phase별 모델 티어 라우팅
+│   ├── headless.py          <- 자동 소스 선택, 재시도, 로깅, 알림
+│   ├── session_manager.py   <- 세션 CRUD
+│   ├── yt_search.py         <- YouTube 검색 (yt-dlp)
+│   ├── web_search.py        <- 웹 검색 (DuckDuckGo)
+│   ├── arxiv_search.py      <- arXiv 논문 검색
+│   ├── community_search.py  <- Reddit & Hacker News 검색
+│   ├── notebooklm_add.py    <- NotebookLM 노트북 + 소스
+│   └── notebooklm_ask.py    <- NotebookLM 질의응답
+├── tests/                   <- pytest 테스트 (440+)
+├── data/
+│   ├── sessions/            <- 세션 데이터 (JSON)
+│   └── pipelines/           <- 파이프라인 핸드오프 데이터
 ├── requirements.txt
 ├── setup.sh
 └── README.md
+```
+
+### 데이터 흐름
+
+```
+spec.json ──→ research.json ──→ strategy.json ──→ execution.json ──→ validation.json
+  (Phase 0)     (Phase 1)        (Phase 2)         (Phase 3)          (Phase 4)
+     ↑                                                                     │
+     └──── handoff_{N}_to_{N+1}.json (Phase 간 핸드오프) ─────────────────→│
+                                                                    drift_score
+                                                                     > 0.3 → Phase 0
+                                                                     ≤ 0.3 → Phase 2
 ```
 
 ## 개발
 
 ```bash
 cd xLoop
-pytest                     # 테스트 실행
-ruff check .               # 린트
-ruff format .              # 포맷팅
+pytest                     # 테스트 실행 (440+)
+ruff check scripts/ tests/ # 린트
 ```
+
+### 코딩 컨벤션
+
+- 절차적 설계 (클래스 미사용)
+- `snake_case` (함수/변수), `UPPER_SNAKE_CASE` (상수)
+- 커스텀 CLI 파싱 (argparse 미사용)
+- `ensure_ascii=False` (모든 JSON 출력)
+- `stderr` + `sys.exit(1)` (에러 처리)
+- `subprocess` 리스트 인자 전달 (`shell=True` 금지)
+- Lazy import
 
 ## 라이선스
 
