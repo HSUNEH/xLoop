@@ -264,7 +264,7 @@ class TestRunnerWithSubprocess:
             records = json.loads(drift_log.read_text())
             assert len(records) >= 1
             assert records[-1]["drift_score"] == 0.8
-            assert records[-1]["action"] == "phase0_return"
+            assert records[-1]["action"] in ("phase0_return", "restart")
 
         finally:
             self._cleanup_session(session_id)

@@ -1,12 +1,12 @@
 <h1 align="center">xLoop</h1>
 
 <p align="center">
-  <strong>eXpert Loop - claude code harness</strong><br>
-  Automated multi-source deep research powered by Claude Code
+  <strong>eXpert Loop — 6-Phase Production Pipeline Orchestrator</strong><br>
+  Automated multi-source deep research & content production powered by Claude Code
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/claude_code-harness-blueviolet" alt="Claude Code">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
 </p>
@@ -21,15 +21,41 @@
 
 ---
 
-xLoop searches across YouTube, Web, arXiv, and Reddit/HN, analyzes sources with NotebookLM, detects knowledge gaps, and iteratively re-searches until full topic coverage is achieved — all through a single **Expert Loop** pipeline.
+xLoop is a **6-Phase production pipeline orchestrator** that takes a goal from definition through research, strategy, execution, evaluation, and drift correction — all automated through Claude Code slash commands.
 
-## Core Concept
+## 6-Phase Pipeline
 
 ```
-Search → Collect sources → NotebookLM analysis → Gap detection → Re-search → ... → Final report
+Phase 0        Phase 1        Phase 2        Phase 3        Phase 4        Phase 5
+Big Bang  -->  Research  -->  Strategy  -->  Execution -->  Evaluation --> Drift Check
+(goal)         (search)       (plan)         (produce)      (validate)     (correct)
+   |                                                             |              |
+   |              spec.json → research.json → strategy.json → execution.json → validation.json
+   |                                                                            |
+   +<---------- drift > 0.3: restart --------<---------<---------<-------------+
+                 drift ≤ 0.3: backtrack to Phase 2
 ```
 
-Expert Loop doesn't stop at a single search. The AI identifies **missing perspectives (gaps)** from the analysis, automatically matches each gap to the optimal source type, and re-searches to progressively deepen topic coverage.
+### Phase Details
+
+| Phase | Command | Module | Output |
+|-------|---------|--------|--------|
+| 0 — Big Bang | `/big-bang` | `goal_engine.py`, `pipeline_spec.py` | `spec.json` |
+| 1 — Research | `/expert-loop` | `loop_engine.py`, search scripts | `research.json` |
+| 2 — Strategy | `/strategy-build` | `strategy_engine.py` | `strategy.json` |
+| 3 — Execution | `/execute` | `execution_engine.py` | `execution.json` |
+| 4 — Evaluation | `/validate` | `evaluation_engine.py` | `validation.json` |
+| 5 — Drift Check | (auto) | `drift_checker.py` | action decision |
+
+### Key Mechanisms
+
+- **Ambiguity Gate** (Phase 0): Goal refinement loop until ambiguity score ≤ 0.2
+- **Resilience** (Phase 1): Stagnation detection + persona switching (Researcher → Hacker → Contrarian → Simplifier)
+- **Double Diamond** (Phase 2): Diverge (generate candidates) → Converge (filter by constraints)
+- **Tool Registry** (Phase 3): Pluggable tool execution (dall-e, flux, etc.)
+- **B+C Drift Measurement** (Phase 4): 3-stage validation (mechanical → semantic → consensus with advocate/critic/judge)
+- **PAL Router**: Per-phase model tier routing (frugal 1x / standard 10x / frontier 30x)
+- **Headless Execution**: Auto source selection, retry with skip, structured logging, webhook alerts
 
 ## Installation
 
@@ -49,7 +75,7 @@ What `setup.sh` does:
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.10+
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — YouTube search
 - [notebooklm-py](https://github.com/nichochar/notebooklm-py) — NotebookLM integration
 - [Playwright](https://playwright.dev/) — Browser automation
@@ -58,161 +84,131 @@ What `setup.sh` does:
 
 ## Usage
 
-### Expert Loop (full pipeline)
+### Full Pipeline
 
+```bash
+# 1. Define goal (interactive)
+/big-bang
+
+# 2. Run full pipeline
+bash scripts/pipeline_runner.sh <session_id>
+
+# Or run phases individually:
+/expert-loop --session <session_id>   # Phase 1
+/strategy-build --session <session_id> # Phase 2
+/execute --session <session_id>        # Phase 3
+/validate --session <session_id>       # Phase 4
 ```
-/expert-loop "AI agents" --max-iterations 3
-```
 
-Automatically runs the entire pipeline: session creation → multi-source search → NotebookLM analysis → gap detection → iterative re-search → final report → action card extraction.
+### Pipeline Commands
 
-### Commands
+| Command | Phase | Description |
+|---------|-------|-------------|
+| `/big-bang` | 0 | Define goal, deliverables, success criteria |
+| `/expert-loop` | 1 | Multi-source deep research loop |
+| `/strategy-build` | 2 | Generate execution strategy from research |
+| `/execute` | 3 | Execute tasks via tool registry |
+| `/validate` | 4 | 3-stage validation + drift scoring |
+
+### Search Commands
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `/yt-search` | Search YouTube videos | `/yt-search "transformer" --count 5` |
+| `/yt-search` | YouTube search | `/yt-search "transformer" --count 5` |
 | `/web-search` | Web search (DuckDuckGo) | `/web-search "AI framework" --time w` |
-| `/arxiv-search` | Search arXiv papers | `/arxiv-search "attention mechanism" --sort date` |
-| `/community-search` | Search Reddit & HN | `/community-search all "LLM deploy" --min-score 50` |
-| `/notebooklm-add` | Add sources to NotebookLM | `/notebooklm-add "research" URL1 URL2` |
-| `/notebooklm-ask` | Ask NotebookLM | `/notebooklm-ask <notebook_id> "key summary"` |
-| `/research` | Manage research sessions | `/research` |
+| `/arxiv-search` | arXiv paper search | `/arxiv-search "attention mechanism" --sort date` |
+| `/community-search` | Reddit & HN search | `/community-search all "LLM deploy" --min-score 50` |
 
-### Session Management
+### Session & NotebookLM
 
 | Command | Description |
 |---------|-------------|
-| `/session-new` | Create a new research session |
+| `/session-new` | Create a new session |
 | `/session-list` | List all sessions |
-| `/session-resume` | Resume an existing session |
+| `/session-resume` | Resume existing session |
 | `/session-summary` | View session summary |
+| `/notebooklm-add` | Add sources to NotebookLM |
+| `/notebooklm-ask` | Ask NotebookLM questions |
+| `/research` | Research session management |
 
-## Search Options
-
-### yt-search
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--count N` | 20 | Number of results |
-| `--months N` | 6 | Filter to last N months |
-| `--no-date-filter` | - | Search all time |
-| `--min-views N` | 0 | Minimum view count |
-| `--min-duration M` | 0 | Minimum length (minutes) |
-| `--max-duration M` | 0 | Maximum length (minutes) |
-| `--channel NAME` | - | Filter by channel |
-| `--json` | - | JSON output |
-
-### web-search
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--count N` | 10 | Number of results |
-| `--time d\|w\|m\|y` | - | Time filter |
-| `--json` | - | JSON output |
-
-### arxiv-search
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--count N` | 10 | Number of results |
-| `--sort` | relevance | `relevance` or `date` |
-| `--json` | - | JSON output |
-
-### community-search
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| platform | (required) | `reddit`, `hn`, or `all` |
-| `--count N` | 10 | Number of results |
-| `--subreddit NAME` | - | Filter by subreddit |
-| `--min-score N` | 0 | Minimum score |
-| `--time d\|w\|m\|y` | year | Time filter |
-| `--json` | - | JSON output |
-
-## How Expert Loop Works
-
-```
-Step 0: Create session + Initialize loop
-    |
-    v
-+--- Loop starts ----------------------------+
-|                                             |
-|  Step 1: Multi-source search + collection   |
-|    -> YouTube / Web / arXiv / Community     |
-|    -> User selects results                  |
-|    -> Add to NotebookLM                     |
-|                                             |
-|  Step 2: Deep analysis via NotebookLM       |
-|    -> Core concepts, approaches, trade-offs |
-|                                             |
-|  Step 3: Gap analysis + Source matching      |
-|    -> Axes: theory/practice, pro/con, etc.  |
-|    -> Match gap type to optimal source      |
-|    -> Generate new search queries           |
-|                                             |
-|  Step 4: Termination check                  |
-|    -> Max iterations or no gaps -> exit     |
-|    -> Gaps remain -> back to Step 1         |
-|                                             |
-+---------------------------------------------+
-    |
-    v
-Step 5: Final synthesis
-Step 6: Research report generation
-Step 7: Action card extraction (-> GitHub Issues)
-```
-
-### Gap-to-Source Matching Strategy
-
-| Gap Type | Recommended Source | Rationale |
-|----------|-------------------|-----------|
-| Theory / Academic / Proofs | arXiv | Papers are the most precise |
-| Practical / Implementation / Tutorials | YouTube | Visual explanations, code walkthroughs |
-| Comparisons / Opinions / Experience | Community | Real-world developer discussions |
-| Latest trends / Official docs | Web | Blogs, official documentation |
-
-## Project Structure
+## Architecture
 
 ```
 xLoop/
-├── commands/              <- Claude Code slash commands (13)
-|   ├── expert-loop.md     <- Core: Expert Loop orchestration
-|   ├── yt-search.md
-|   ├── web-search.md
-|   ├── arxiv-search.md
-|   ├── community-search.md
-|   ├── notebooklm-add.md
-|   ├── notebooklm-ask.md
-|   ├── research.md
-|   ├── session-new.md
-|   ├── session-list.md
-|   ├── session-resume.md
-|   └── session-summary.md
-├── scripts/               <- Python search & analysis scripts
-|   ├── loop_engine.py     <- Loop state management
-|   ├── session_manager.py <- Session CRUD + search/source/question tracking
-|   ├── yt_search.py       <- YouTube search (yt-dlp)
-|   ├── web_search.py      <- Web search (DuckDuckGo)
-|   ├── arxiv_search.py    <- arXiv paper search
-|   ├── community_search.py<- Reddit & Hacker News search
-|   ├── notebooklm_add.py  <- NotebookLM notebook creation + source addition
-|   └── notebooklm_ask.py  <- NotebookLM Q&A
-├── tests/                 <- pytest tests
-├── data/sessions/         <- Session data (JSON)
-├── assets/                <- Static resources (images, etc.)
+├── commands/                <- Claude Code slash commands (16)
+│   ├── big-bang.md          <- Phase 0: Goal definition
+│   ├── expert-loop.md       <- Phase 1: Research loop
+│   ├── strategy-build.md    <- Phase 2: Strategy generation
+│   ├── execute.md           <- Phase 3: Task execution
+│   ├── validate.md          <- Phase 4: Validation
+│   ├── yt-search.md         <- YouTube search
+│   ├── web-search.md        <- Web search
+│   ├── arxiv-search.md      <- arXiv search
+│   ├── community-search.md  <- Reddit/HN search
+│   ├── notebooklm-add.md    <- NotebookLM source addition
+│   ├── notebooklm-ask.md    <- NotebookLM Q&A
+│   ├── research.md          <- Research management
+│   ├── session-new.md
+│   ├── session-list.md
+│   ├── session-resume.md
+│   └── session-summary.md
+├── scripts/                 <- Python modules (17)
+│   ├── pipeline_spec.py     <- Pipeline Spec (Phase 0 schema)
+│   ├── goal_engine.py       <- Goal refinement loop
+│   ├── pipeline_schema.py   <- Phase 간 JSON schema contracts
+│   ├── pipeline_runner.sh   <- Phase 0→5 orchestrator
+│   ├── loop_engine.py       <- Research loop + resilience
+│   ├── strategy_engine.py   <- Strategy generation (Double Diamond)
+│   ├── execution_engine.py  <- Task execution + tool registry
+│   ├── evaluation_engine.py <- 3-stage validation (B+C drift)
+│   ├── drift_checker.py     <- Drift check + backtrack/restart
+│   ├── pal_router.py        <- Per-phase model tier routing
+│   ├── headless.py          <- Auto source selection, retry, logging, alerts
+│   ├── session_manager.py   <- Session CRUD
+│   ├── yt_search.py         <- YouTube search (yt-dlp)
+│   ├── web_search.py        <- Web search (DuckDuckGo)
+│   ├── arxiv_search.py      <- arXiv paper search
+│   ├── community_search.py  <- Reddit & HN search
+│   ├── notebooklm_add.py    <- NotebookLM notebook + source
+│   └── notebooklm_ask.py    <- NotebookLM Q&A
+├── tests/                   <- pytest tests (400+)
+├── data/
+│   ├── sessions/            <- Session data (JSON)
+│   └── pipelines/           <- Pipeline handoff data
 ├── requirements.txt
 ├── setup.sh
 └── README.md
+```
+
+### Data Flow
+
+```
+spec.json ──→ research.json ──→ strategy.json ──→ execution.json ──→ validation.json
+  (Phase 0)     (Phase 1)        (Phase 2)         (Phase 3)          (Phase 4)
+     ↑                                                                     │
+     └──── handoff_{N}_to_{N+1}.json between each phase ──────────────────→│
+                                                                    drift_score
+                                                                     > 0.3 → Phase 0
+                                                                     ≤ 0.3 → Phase 2
 ```
 
 ## Development
 
 ```bash
 cd xLoop
-pytest                     # Run tests
-ruff check .               # Lint
-ruff format .              # Format
+pytest                     # Run tests (400+)
+ruff check scripts/ tests/ # Lint
 ```
+
+### Coding Conventions
+
+- Procedural design (no classes)
+- `snake_case` for functions/variables, `UPPER_SNAKE_CASE` for constants
+- Custom CLI parsing (no argparse)
+- `ensure_ascii=False` for all JSON output
+- `stderr` + `sys.exit(1)` for errors
+- `subprocess` with list args (no `shell=True`)
+- Lazy imports
 
 ## License
 

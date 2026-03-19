@@ -115,10 +115,10 @@ def execute_restart(session_id, webhook_url=None):
     Returns:
         dict: {"action": "restart", "session_id": str, "alerted": bool}
     """
-    from headless import send_alert
+    import headless
 
     # 알림 발송
-    send_alert(
+    headless.send_alert(
         "드리프트 감지 — Phase 0 복귀",
         f"세션 {session_id}: drift > {DRIFT_THRESHOLD}, spec 재정의 필요",
         webhook_url=webhook_url,
@@ -143,7 +143,7 @@ def run_drift_check(session_id, webhook_url=None):
         1 = restart (Phase 0)
         2 = backtrack (Phase 2)
     """
-    from headless import log_progress
+    import headless
 
     # 1. Check
     drift_info = check_drift(session_id)
@@ -156,7 +156,7 @@ def run_drift_check(session_id, webhook_url=None):
     _log_drift(session_id, drift_score, action,
                reason=f"feedback: {drift_info.get('feedback', [])}")
 
-    log_progress(session_id, "phase5",
+    headless.log_progress(session_id, "phase5",
                  f"drift={drift_score}, action={action}", level="info")
 
     # 4. Execute
@@ -166,16 +166,16 @@ def run_drift_check(session_id, webhook_url=None):
             "session_id": session_id,
             "message": "드리프트 0 — 파이프라인 완료",
         }
-        log_progress(session_id, "phase5", "파이프라인 완료", level="info")
+        headless.log_progress(session_id, "phase5", "파이프라인 완료", level="info")
 
     elif action == "backtrack":
         result = execute_backtrack(session_id)
-        log_progress(session_id, "phase5",
+        headless.log_progress(session_id, "phase5",
                      "백트래킹: Phase 2로 복귀", level="warning")
 
     else:  # restart
         result = execute_restart(session_id, webhook_url=webhook_url)
-        log_progress(session_id, "phase5",
+        headless.log_progress(session_id, "phase5",
                      "Phase 0 복귀 — 알림 발송", level="error")
 
     return {

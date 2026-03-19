@@ -433,15 +433,15 @@ from pipeline_schema import create_validation, save_phase_output
 
 sid = os.environ["RUNNER_SESSION_ID"]
 data = create_validation(sid)
-# Placeholder passes with low drift (real /validate command will set actual values)
+# Placeholder passes with zero drift (real /validate command will set actual values)
 data["passed"] = True
-data["drift_score"] = 0.1
+data["drift_score"] = 0.0
 data["action"] = "complete"
 data["stage1_mechanical"] = {"passed": True, "checks": [{"criterion": "placeholder", "result": True}]}
 data["stage2_semantic"] = {"passed": True, "spec_alignment": 0.9, "notes": ["placeholder"]}
 data["stage3_consensus"] = {
     "passed": True, "advocate": "placeholder", "critic": "placeholder",
-    "judge": "placeholder", "drift_score": 0.1,
+    "judge": "placeholder", "drift_score": 0.0,
 }
 path = save_phase_output(data, "validation", sid)
 print(f"Saved: {path}")
@@ -451,48 +451,26 @@ print(f"Saved: {path}")
 run_phase5() {
     log "--- Phase 5: Drift Check ---"
 
-    # Read drift_score and action from validation.json
-    local validation_info
-    validation_info=$(RUNNER_SCRIPT_DIR="$SCRIPT_DIR" \
-    RUNNER_SESSION_ID="$SESSION_ID" \
-    python3 -c '
-import json, os, sys
-sys.path.insert(0, os.environ["RUNNER_SCRIPT_DIR"])
-from pipeline_schema import load_phase_output
-data = load_phase_output("validation", os.environ["RUNNER_SESSION_ID"])
-print(json.dumps({
-    "drift_score": data.get("drift_score", 1.0),
-    "action": data.get("action", "pending"),
-}))
-')
+    # Delegate to drift_checker.py (exit codes: 0=complete, 1=restart, 2=backtrack)
+    local webhook_arg=""
+    if [ -n "$NOTIFY_URL" ]; then
+        webhook_arg="--webhook $NOTIFY_URL"
+    fi
+
+    local drift_output
+    local drift_exit=0
+    drift_output=$(python3 "$SCRIPT_DIR/drift_checker.py" run "$SESSION_ID" $webhook_arg 2>&1) || drift_exit=$?
+
+    log "drift_checker.py output: $drift_output"
 
     local drift_score
-    drift_score=$(echo "$validation_info" | python3 -c "import json,sys; print(json.load(sys.stdin)['drift_score'])")
+    drift_score=$(echo "$drift_output" | python3 -c "import json,sys; print(json.load(sys.stdin)['drift_score'])" 2>/dev/null) || drift_score="?"
     local action
-    action=$(echo "$validation_info" | python3 -c "import json,sys; print(json.load(sys.stdin)['action'])")
+    action=$(echo "$drift_output" | python3 -c "import json,sys; print(json.load(sys.stdin)['action'])" 2>/dev/null) || action="?"
 
-    log "Drift score: $drift_score (threshold: $DRIFT_THRESHOLD)"
-    log_phase_progress "phase5" "drift=$drift_score, threshold=$DRIFT_THRESHOLD" "info"
+    log "Drift score: $drift_score, action: $action (exit: $drift_exit)"
 
-    # Compare drift_score with threshold
-    local exceeds
-    exceeds=$(python3 -c "print('yes' if float('$drift_score') > float('$DRIFT_THRESHOLD') else 'no')")
-
-    if [ "$exceeds" = "yes" ]; then
-        handle_drift "$drift_score" "Phase 4 drift_score exceeds threshold (action: $action)"
-        return 1
-    fi
-
-    # Check if drift ≤ 0.3 but validation action suggests backtracking to Phase 2
-    if [ "$action" = "backtrack_phase2" ]; then
-        log "Drift ≤ $DRIFT_THRESHOLD but action=backtrack_phase2 → re-run Phase 2"
-        log_phase_progress "phase5" "백트래킹: Phase 2로 복귀" "warning"
-        return 2  # Special exit code for Phase 2 backtrack
-    fi
-
-    log "Drift check passed ✓ (score: $drift_score, action: $action)"
-    log_phase_progress "phase5" "통과 — drift=$drift_score" "info"
-    return 0
+    return "$drift_exit"
 }
 
 # ── Main ────────────────────────────────────────────────────────────

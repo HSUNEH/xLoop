@@ -130,8 +130,8 @@ def send_alert(title, body, webhook_url=None):
     """
     import subprocess
 
-    # macOS local notification (skip if XLOOP_SILENT is set)
-    if not os.environ.get("XLOOP_SILENT"):
+    # macOS local notification (disabled by default — set XLOOP_NOTIFY=1 to enable)
+    if os.environ.get("XLOOP_NOTIFY"):
         try:
             subprocess.run(
                 ["osascript", "-e",
