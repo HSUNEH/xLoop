@@ -34,12 +34,21 @@ def _now_iso() -> str:
     return datetime.now().replace(microsecond=0).isoformat()
 
 
-def create_session(topic: str) -> dict:
-    """Create a new session and save it to disk."""
+def create_session(topic: str, session_type: str = "research") -> dict:
+    """Create a new session and save it to disk.
+
+    Args:
+        topic: Session topic description.
+        session_type: "research" (default) or "pipeline".
+    """
+    if session_type not in ("research", "pipeline"):
+        raise ValueError(f"Invalid session_type: {session_type!r} (expected 'research' or 'pipeline')")
+
     now = _now_iso()
     session = {
         "id": _make_session_id(),
         "topic": topic,
+        "session_type": session_type,
         "created_at": now,
         "updated_at": now,
         "status": "active",
@@ -49,6 +58,8 @@ def create_session(topic: str) -> dict:
         "sources": [],
         "questions": [],
     }
+    if session_type == "pipeline":
+        session["spec"] = None
     save_session(session)
     return session
 
@@ -183,12 +194,20 @@ def _parse_cli(argv: list[str]) -> None:
 
     if cmd == "create":
         if len(argv) < 3:
-            print("Usage: session_manager.py create <topic>", file=sys.stderr)
+            print("Usage: session_manager.py create <topic> [--type research|pipeline]", file=sys.stderr)
             sys.exit(1)
-        topic = " ".join(argv[2:])
-        session = create_session(topic)
+        session_type = "research"
+        remaining = list(argv[2:])
+        if "--type" in remaining:
+            idx = remaining.index("--type")
+            if idx + 1 < len(remaining):
+                session_type = remaining[idx + 1]
+                remaining = remaining[:idx] + remaining[idx + 2:]
+        topic = " ".join(remaining)
+        session = create_session(topic, session_type=session_type)
         print(f"Created session: {session['id']}")
         print(f"Topic: {session['topic']}")
+        print(f"Type: {session['session_type']}")
 
     elif cmd == "list":
         status = None

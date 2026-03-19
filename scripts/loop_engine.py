@@ -8,6 +8,17 @@ from pathlib import Path
 
 SESSIONS_DIR = Path(__file__).resolve().parent.parent / "data" / "sessions"
 
+# ── Personas ────────────────────────────────────────────────────────
+
+PERSONAS = ("researcher", "hacker", "contrarian", "simplifier")
+
+_PERSONA_PROMPTS = {
+    "researcher": "폭넓게 검색하라. 다양한 소스를 탐색하고, 새로운 관점을 찾아라.",
+    "hacker": "좁고 깊게 파고들어라. 가장 큰 gap 하나에 집중하고, 비전통적 소스를 시도하라.",
+    "contrarian": "반대 관점에서 접근하라. 기존 findings에 반론을 검색하고, 대안을 탐색하라.",
+    "simplifier": "수렴하라. 핵심만 추출하고, 중복을 제거하고, 최종 요약을 준비하라.",
+}
+
 
 def _get_sessions_dir() -> Path:
     """Return the sessions directory, creating it if needed."""
@@ -55,6 +66,8 @@ def start_loop(session_id: str, initial_query: str, max_iterations: int = 3) -> 
         "iterations": [],
         "covered_topics": [],
         "all_queries": [initial_query],
+        "persona": "researcher",
+        "persona_history": [{"persona": "researcher", "iteration": 0, "reason": "initial"}],
     }
 
     session["loop"] = loop
@@ -167,6 +180,94 @@ def end_loop(session_id: str) -> dict:
     return session["loop"]
 
 
+# ── Resilience ──────────────────────────────────────────────────────
+
+
+def detect_stagnation(session_id: str) -> dict:
+    """Detect stagnation by comparing the last 2 iterations.
+
+    Returns {stagnant, indicators, score} where score is 0-3
+    (number of stagnation indicators triggered).
+    Stagnant if score >= 2 (2 out of 3 indicators).
+    """
+    session = _load_session(session_id)
+    loop = session.get("loop")
+    if loop is None:
+        raise ValueError(f"Session {session_id} has no loop")
+
+    iterations = loop.get("iterations", [])
+    if len(iterations) < 2:
+        return {"stagnant": False, "indicators": [], "score": 0}
+
+    prev = iterations[-2]
+    curr = iterations[-1]
+    indicators = []
+
+    # Indicator 1: findings overlap > 50%
+    prev_findings = set(prev.get("findings", []))
+    curr_findings = set(curr.get("findings", []))
+    if curr_findings and prev_findings:
+        overlap = len(curr_findings & prev_findings) / max(len(curr_findings), 1)
+        if overlap > 0.5:
+            indicators.append("findings_overlap")
+
+    # Indicator 2: gaps unchanged
+    prev_gaps = set(prev.get("gaps", []))
+    curr_gaps = set(curr.get("gaps", []))
+    if prev_gaps == curr_gaps and len(prev_gaps) > 0:
+        indicators.append("gaps_unchanged")
+
+    # Indicator 3: no new sources
+    if curr.get("sources_added", 0) == 0:
+        indicators.append("no_new_sources")
+
+    score = len(indicators)
+    return {
+        "stagnant": score >= 2,
+        "indicators": indicators,
+        "score": score,
+    }
+
+
+def switch_persona(session_id: str, reason: str = "stagnation") -> dict:
+    """Switch to the next persona in the cycle. Returns {old, new, history}."""
+    session = _load_session(session_id)
+    loop = _require_running_loop(session)
+
+    old_persona = loop.get("persona", "researcher")
+    idx = PERSONAS.index(old_persona) if old_persona in PERSONAS else 0
+    new_persona = PERSONAS[(idx + 1) % len(PERSONAS)]
+
+    loop["persona"] = new_persona
+    if "persona_history" not in loop:
+        loop["persona_history"] = []
+    loop["persona_history"].append({
+        "persona": new_persona,
+        "iteration": loop["current_iteration"],
+        "reason": reason,
+    })
+
+    session["updated_at"] = _now_iso()
+    _save_session(session)
+
+    return {
+        "old": old_persona,
+        "new": new_persona,
+        "history": loop["persona_history"],
+    }
+
+
+def get_persona_prompt(session_id: str) -> str:
+    """Return the search guidance prompt for the current persona."""
+    session = _load_session(session_id)
+    loop = session.get("loop")
+    if loop is None:
+        raise ValueError(f"Session {session_id} has no loop")
+
+    persona = loop.get("persona", "researcher")
+    return _PERSONA_PROMPTS.get(persona, _PERSONA_PROMPTS["researcher"])
+
+
 # ── CLI ──────────────────────────────────────────────────────────────
 
 
@@ -246,6 +347,37 @@ def _parse_cli(argv: list[str]) -> None:
         result = end_loop(argv[2])
         print(f"Loop completed. Status: {result['status']}")
 
+    elif cmd == "stagnation":
+        if len(argv) < 3:
+            print("Usage: loop_engine.py stagnation <session_id>", file=sys.stderr)
+            sys.exit(1)
+        result = detect_stagnation(argv[2])
+        stag = "Yes" if result["stagnant"] else "No"
+        print(f"Stagnant: {stag} (score: {result['score']}/3)")
+        if result["indicators"]:
+            print(f"Indicators: {', '.join(result['indicators'])}")
+
+    elif cmd == "persona":
+        if len(argv) < 3:
+            print("Usage: loop_engine.py persona <session_id>", file=sys.stderr)
+            sys.exit(1)
+        prompt = get_persona_prompt(argv[2])
+        state = get_loop_state(argv[2])
+        print(f"Current persona: {state.get('persona', 'researcher')}")
+        print(f"Guidance: {prompt}")
+
+    elif cmd == "switch-persona":
+        if len(argv) < 3:
+            print("Usage: loop_engine.py switch-persona <session_id> [--reason TEXT]", file=sys.stderr)
+            sys.exit(1)
+        reason = "manual"
+        if "--reason" in argv:
+            idx = argv.index("--reason")
+            if idx + 1 < len(argv):
+                reason = argv[idx + 1]
+        result = switch_persona(argv[2], reason=reason)
+        print(f"Persona switched: {result['old']} → {result['new']}")
+
     else:
         print(f"Unknown command: {cmd}", file=sys.stderr)
         _usage()
@@ -275,7 +407,10 @@ def _usage() -> None:
         "  add-iteration <session_id> ...                   Record an iteration\n"
         "  check <session_id>                               Check termination\n"
         "  filter-queries <session_id> --candidates-json ..  Filter used queries\n"
-        "  end <session_id>                                 End the loop",
+        "  end <session_id>                                 End the loop\n"
+        "  stagnation <session_id>                          Detect stagnation\n"
+        "  persona <session_id>                             Show current persona\n"
+        "  switch-persona <session_id> [--reason TEXT]      Switch persona",
         file=sys.stderr,
     )
 

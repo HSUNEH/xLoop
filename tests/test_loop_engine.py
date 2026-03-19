@@ -472,3 +472,187 @@ class TestCli:
 
         with pytest.raises(SystemExit):
             _parse_cli(["loop_engine.py"])
+
+
+# ── Resilience: stagnation detection ─────────────────────────────────
+
+
+class TestDetectStagnation:
+    def test_not_stagnant_with_one_iteration(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import add_iteration, detect_stagnation, start_loop
+
+        session = create_session("stag 1 iter")
+        start_loop(session["id"], "query")
+        add_iteration(session["id"], queries=["q1"], sources_added=1,
+                      findings=["f1"], gaps=["g1"])
+
+        result = detect_stagnation(session["id"])
+        assert not result["stagnant"]
+        assert result["score"] == 0
+
+    def test_not_stagnant_with_diverse_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import add_iteration, detect_stagnation, start_loop
+
+        session = create_session("stag diverse")
+        start_loop(session["id"], "query")
+        add_iteration(session["id"], queries=["q1"], sources_added=3,
+                      findings=["f1", "f2"], gaps=["g1"])
+        add_iteration(session["id"], queries=["q2"], sources_added=2,
+                      findings=["f3", "f4"], gaps=["g2"])
+
+        result = detect_stagnation(session["id"])
+        assert not result["stagnant"]
+        assert result["score"] == 0
+
+    def test_stagnant_with_repeated_findings_and_same_gaps(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import add_iteration, detect_stagnation, start_loop
+
+        session = create_session("stag repeated")
+        start_loop(session["id"], "query")
+        add_iteration(session["id"], queries=["q1"], sources_added=2,
+                      findings=["f1", "f2"], gaps=["g1", "g2"])
+        add_iteration(session["id"], queries=["q2"], sources_added=0,
+                      findings=["f1", "f2"], gaps=["g1", "g2"])
+
+        result = detect_stagnation(session["id"])
+        assert result["stagnant"]
+        assert result["score"] >= 2
+        assert "findings_overlap" in result["indicators"]
+        assert "gaps_unchanged" in result["indicators"]
+        assert "no_new_sources" in result["indicators"]
+
+    def test_boundary_one_indicator_not_stagnant(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import add_iteration, detect_stagnation, start_loop
+
+        session = create_session("stag boundary")
+        start_loop(session["id"], "query")
+        add_iteration(session["id"], queries=["q1"], sources_added=2,
+                      findings=["f1"], gaps=["g1"])
+        # Only no_new_sources triggers (1/3)
+        add_iteration(session["id"], queries=["q2"], sources_added=0,
+                      findings=["f2"], gaps=["g2"])
+
+        result = detect_stagnation(session["id"])
+        assert not result["stagnant"]
+        assert result["score"] == 1
+
+    def test_raises_if_no_loop(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import detect_stagnation
+
+        session = create_session("stag no loop")
+
+        with pytest.raises(ValueError, match="no loop"):
+            detect_stagnation(session["id"])
+
+
+# ── Resilience: persona switching ────────────────────────────────────
+
+
+class TestSwitchPersona:
+    def test_initial_persona_is_researcher(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import get_loop_state, start_loop
+
+        session = create_session("persona init")
+        start_loop(session["id"], "query")
+
+        state = get_loop_state(session["id"])
+        assert state["persona"] == "researcher"
+        assert len(state["persona_history"]) == 1
+
+    def test_switch_cycles_through_personas(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import start_loop, switch_persona
+
+        session = create_session("persona cycle")
+        start_loop(session["id"], "query")
+
+        r1 = switch_persona(session["id"])
+        assert r1["old"] == "researcher"
+        assert r1["new"] == "hacker"
+
+        r2 = switch_persona(session["id"])
+        assert r2["old"] == "hacker"
+        assert r2["new"] == "contrarian"
+
+        r3 = switch_persona(session["id"])
+        assert r3["old"] == "contrarian"
+        assert r3["new"] == "simplifier"
+
+        r4 = switch_persona(session["id"])
+        assert r4["old"] == "simplifier"
+        assert r4["new"] == "researcher"
+
+    def test_records_switch_history(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import start_loop, switch_persona
+
+        session = create_session("persona history")
+        start_loop(session["id"], "query")
+        switch_persona(session["id"], reason="stagnation")
+
+        reloaded = load_session(session["id"])
+        history = reloaded["loop"]["persona_history"]
+        assert len(history) == 2  # initial + switch
+        assert history[1]["persona"] == "hacker"
+        assert history[1]["reason"] == "stagnation"
+
+    def test_raises_if_not_running(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import end_loop, start_loop, switch_persona
+
+        session = create_session("persona ended")
+        start_loop(session["id"], "query")
+        end_loop(session["id"])
+
+        with pytest.raises(ValueError, match="not running"):
+            switch_persona(session["id"])
+
+
+class TestGetPersonaPrompt:
+    def test_returns_researcher_prompt(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import get_persona_prompt, start_loop
+
+        session = create_session("prompt researcher")
+        start_loop(session["id"], "query")
+
+        prompt = get_persona_prompt(session["id"])
+        assert "폭넓" in prompt
+
+    def test_returns_hacker_prompt_after_switch(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import get_persona_prompt, start_loop, switch_persona
+
+        session = create_session("prompt hacker")
+        start_loop(session["id"], "query")
+        switch_persona(session["id"])
+
+        prompt = get_persona_prompt(session["id"])
+        assert "깊게" in prompt or "집중" in prompt
+
+    def test_raises_if_no_loop(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("session_manager.SESSIONS_DIR", tmp_path)
+        monkeypatch.setattr("loop_engine.SESSIONS_DIR", tmp_path)
+        from loop_engine import get_persona_prompt
+
+        session = create_session("prompt no loop")
+
+        with pytest.raises(ValueError, match="no loop"):
+            get_persona_prompt(session["id"])
