@@ -1,7 +1,7 @@
 <h1 align="center">xLoop</h1>
 
 <p align="center">
-  <strong>e**X**pert **L**oop - claude code harness</strong><br>
+  <strong>eXpert Loop - claude code harness</strong><br>
   Automated multi-source deep research powered by Claude Code
 </p>
 
