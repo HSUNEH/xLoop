@@ -1,0 +1,7 @@
+yt-dlp
+notebooklm-py[browser]
+playwright
+pytest
+ruff
+duckduckgo-search
+arxiv
