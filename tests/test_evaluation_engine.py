@@ -15,6 +15,7 @@ from evaluation_engine import (
     determine_action,
     judge,
     run_evaluation,
+    run_stage0,
     run_stage1,
     run_stage2,
     run_stage3,
@@ -47,7 +48,7 @@ def _make_spec(deliverables=None, success_criteria=None, target="test target"):
     }
 
 
-def _make_execution(artifacts=None, tasks_completed=0, tasks_failed=0):
+def _make_execution(artifacts=None, tasks_completed=0, tasks_failed=0, smoke_test=None):
     return {
         "version": "1.0",
         "session_id": "ses_test",
@@ -56,6 +57,18 @@ def _make_execution(artifacts=None, tasks_completed=0, tasks_failed=0):
         "tasks_completed": tasks_completed,
         "tasks_failed": tasks_failed,
         "total_cost": None,
+        "smoke_test": smoke_test,
+    }
+
+
+def _skipped_smoke_test():
+    """서버 없는 프로젝트에서의 스킵된 smoke test 결과."""
+    return {
+        "passed": True,
+        "server_started": False,
+        "port": None,
+        "endpoints": [],
+        "error": "start_command not configured — skipped",
     }
 
 
@@ -70,6 +83,93 @@ def _make_artifact(task_id="t1", tool="claude", status="done", output="test outp
     else:
         result["error"] = "failed"
     return result
+
+
+# ── Stage 0: Runtime ──────────────────────────────────────────────
+
+
+class TestRunStage0:
+    def test_no_smoke_test_fails(self):
+        execution = _make_execution(tasks_completed=1)
+        result = run_stage0(execution)
+
+        assert result["passed"] is False
+        assert any("미실행" in c["detail"] for c in result["checks"])
+
+    def test_smoke_test_none_fails(self):
+        execution = _make_execution(tasks_completed=1)
+        execution["smoke_test"] = None
+        result = run_stage0(execution)
+
+        assert result["passed"] is False
+
+    def test_smoke_test_skipped_passes(self):
+        execution = _make_execution(tasks_completed=1)
+        execution["smoke_test"] = {
+            "passed": True,
+            "server_started": False,
+            "port": None,
+            "endpoints": [],
+            "error": "start_command not configured — skipped",
+        }
+        result = run_stage0(execution)
+
+        assert result["passed"] is True
+        assert any("스킵" in c["detail"] for c in result["checks"])
+
+    def test_smoke_test_all_pass(self):
+        execution = _make_execution(tasks_completed=1)
+        execution["smoke_test"] = {
+            "passed": True,
+            "server_started": True,
+            "port": 8080,
+            "endpoints": [
+                {"path": "/health", "method": "GET", "status_code": 200, "passed": True, "error": None},
+                {"path": "/api", "method": "GET", "status_code": 200, "passed": True, "error": None},
+            ],
+            "error": None,
+        }
+        result = run_stage0(execution)
+
+        assert result["passed"] is True
+        assert len(result["checks"]) == 3  # server_started + 2 endpoints
+
+    def test_smoke_test_server_fail(self):
+        execution = _make_execution(tasks_completed=1)
+        execution["smoke_test"] = {
+            "passed": False,
+            "server_started": False,
+            "port": 8080,
+            "endpoints": [],
+            "error": "Server did not respond within 30s",
+        }
+        result = run_stage0(execution)
+
+        assert result["passed"] is False
+        server_check = [c for c in result["checks"] if c["name"] == "server_started"]
+        assert server_check[0]["passed"] is False
+
+    def test_smoke_test_endpoint_5xx(self):
+        execution = _make_execution(tasks_completed=1)
+        execution["smoke_test"] = {
+            "passed": False,
+            "server_started": True,
+            "port": 8080,
+            "endpoints": [
+                {"path": "/health", "method": "GET", "status_code": 200, "passed": True, "error": None},
+                {"path": "/api", "method": "GET", "status_code": 500, "passed": False, "error": "HTTP 500"},
+            ],
+            "error": None,
+        }
+        result = run_stage0(execution)
+
+        assert result["passed"] is False
+        endpoint_checks = [c for c in result["checks"] if c["name"].startswith("endpoint:")]
+        assert len(endpoint_checks) == 2
+        passed_eps = [c for c in endpoint_checks if c["passed"]]
+        failed_eps = [c for c in endpoint_checks if not c["passed"]]
+        assert len(passed_eps) == 1
+        assert len(failed_eps) == 1
 
 
 # ── Stage 1: Mechanical ────────────────────────────────────────────
@@ -272,7 +372,7 @@ class TestJudge:
             {"name": "b", "passed": True, "detail": "ok"},
         ]}
         stage2 = {"passed": True, "spec_alignment": 0.9, "notes": []}
-        result = judge("옹호: good", "비판: 없음", stage1, stage2)
+        result = judge("옹호: good", "비판: 없음", None, stage1, stage2)
 
         assert result["passed"] is True
         assert result["drift_score"] <= DRIFT_THRESHOLD
@@ -282,7 +382,7 @@ class TestJudge:
             {"name": "a", "passed": False, "detail": "bad"},
         ]}
         stage2 = {"passed": False, "spec_alignment": 0.1, "notes": []}
-        result = judge("옹호: 없음", "비판: bad", stage1, stage2)
+        result = judge("옹호: 없음", "비판: bad", None, stage1, stage2)
 
         assert result["passed"] is False
         assert result["drift_score"] > DRIFT_THRESHOLD
@@ -290,16 +390,58 @@ class TestJudge:
     def test_drift_clamped_0_to_1(self):
         stage1 = {"passed": False, "checks": [{"name": "a", "passed": False, "detail": "x"}]}
         stage2 = {"passed": False, "spec_alignment": 0.0, "notes": []}
-        result = judge("a", "b", stage1, stage2)
+        result = judge("a", "b", None, stage1, stage2)
 
         assert 0.0 <= result["drift_score"] <= 1.0
 
     def test_empty_checks_default(self):
         stage1 = {"passed": False, "checks": []}
         stage2 = {"passed": False, "spec_alignment": 0.5, "notes": []}
-        result = judge("a", "b", stage1, stage2)
+        result = judge("a", "b", None, stage1, stage2)
 
         assert "drift_score" in result
+
+    def test_stage0_full_fail_adds_penalty(self):
+        stage0 = {"passed": False, "checks": [
+            {"name": "server_started", "passed": False, "detail": "서버 기동 실패"},
+        ]}
+        stage1 = {"passed": True, "checks": [
+            {"name": "a", "passed": True, "detail": "ok"},
+        ]}
+        stage2 = {"passed": True, "spec_alignment": 0.9, "notes": []}
+        result_with = judge("a", "b", stage0, stage1, stage2)
+        result_without = judge("a", "b", None, stage1, stage2)
+
+        assert result_with["drift_score"] > result_without["drift_score"]
+        assert result_with["drift_score"] >= result_without["drift_score"] + 0.4  # ~0.5 penalty
+
+    def test_stage0_partial_fail_adds_proportional_penalty(self):
+        stage0 = {"passed": False, "checks": [
+            {"name": "ep1", "passed": True, "detail": "OK"},
+            {"name": "ep2", "passed": False, "detail": "HTTP 500"},
+        ]}
+        stage1 = {"passed": True, "checks": [
+            {"name": "a", "passed": True, "detail": "ok"},
+        ]}
+        stage2 = {"passed": True, "spec_alignment": 0.9, "notes": []}
+        result = judge("a", "b", stage0, stage1, stage2)
+
+        # 50% fail ratio × 0.3 = 0.15 penalty
+        result_no_s0 = judge("a", "b", None, stage1, stage2)
+        assert result["drift_score"] > result_no_s0["drift_score"]
+
+    def test_stage0_pass_no_penalty(self):
+        stage0 = {"passed": True, "checks": [
+            {"name": "ep1", "passed": True, "detail": "OK"},
+        ]}
+        stage1 = {"passed": True, "checks": [
+            {"name": "a", "passed": True, "detail": "ok"},
+        ]}
+        stage2 = {"passed": True, "spec_alignment": 0.9, "notes": []}
+        result_with = judge("a", "b", stage0, stage1, stage2)
+        result_without = judge("a", "b", None, stage1, stage2)
+
+        assert result_with["drift_score"] == result_without["drift_score"]
 
 
 class TestRunStage3:
@@ -310,9 +452,10 @@ class TestRunStage3:
             tasks_completed=2,
             tasks_failed=0,
         )
+        stage0 = run_stage0(execution)
         stage1 = run_stage1(spec, execution)
         stage2 = run_stage2(spec, execution)
-        result = run_stage3(spec, execution, stage1, stage2)
+        result = run_stage3(spec, execution, stage0, stage1, stage2)
 
         assert "advocate" in result
         assert "critic" in result
@@ -364,6 +507,7 @@ class TestRunEvaluation:
             ],
             tasks_completed=2,
             tasks_failed=0,
+            smoke_test=_skipped_smoke_test(),
         )
         self._setup_data(tmp_path, "ses_eval", spec, execution)
 
@@ -372,6 +516,7 @@ class TestRunEvaluation:
         assert validation["passed"] is True
         assert validation["drift_score"] <= DRIFT_THRESHOLD
         assert validation["action"] == "pass"
+        assert validation["stage0_runtime"]["passed"] is True
         assert validation["stage1_mechanical"]["passed"] is True
         assert validation["stage2_semantic"]["passed"] is True
         assert validation["stage3_consensus"]["passed"] is True
@@ -408,6 +553,7 @@ class TestRunEvaluation:
             artifacts=[_make_artifact("t1", output="output data")],
             tasks_completed=1,
             tasks_failed=0,
+            smoke_test=_skipped_smoke_test(),
         )
         self._setup_data(tmp_path, "ses_save", spec, execution)
 
@@ -452,6 +598,7 @@ class TestRunEvaluation:
             artifacts=[_make_artifact("t1", output="code here")],
             tasks_completed=1,
             tasks_failed=0,
+            smoke_test=_skipped_smoke_test(),
         )
         self._setup_data(tmp_path, "ses_schema", spec, execution)
 

@@ -10,12 +10,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from execution_engine import (
     _TOOL_REGISTRY,
+    _check_endpoint,
+    _find_free_port,
+    _wait_for_server,
     execute_task,
     get_execution_status,
     get_tool,
     list_tools,
     register_tool,
     run_execution,
+    run_smoke_test,
     show_execution,
 )
 
@@ -91,6 +95,92 @@ class TestDefaultStubs:
         fn = get_tool("web_search")
         result = fn({"id": "t5", "title": "Search"}, "ses_test")
         assert result["type"] == "search_result"
+
+
+# ── Smoke Test ───────────────────────────────────────────────────────
+
+
+class TestFindFreePort:
+    def test_returns_int(self):
+        port = _find_free_port()
+        assert isinstance(port, int)
+        assert port > 0
+
+    def test_returns_different_ports(self):
+        ports = {_find_free_port() for _ in range(5)}
+        assert len(ports) >= 2  # OS may reuse, but typically different
+
+
+class TestRunSmokeTest:
+    def test_no_start_command_skips(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("execution_engine.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+
+        result = run_smoke_test("ses_smoke", [], strategy={})
+
+        assert result["passed"] is True
+        assert result["server_started"] is False
+        assert "skipped" in result["error"]
+
+    def test_no_strategy_skips(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("execution_engine.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+
+        result = run_smoke_test("ses_smoke", [], strategy=None)
+
+        assert result["passed"] is True
+        assert result["server_started"] is False
+
+    def test_bad_start_command_fails(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("execution_engine.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+
+        strategy = {
+            "smoke_test": {
+                "start_command": "/nonexistent/binary/that/does/not/exist --port {port}",
+                "endpoints": [{"path": "/", "method": "GET"}],
+            }
+        }
+        result = run_smoke_test("ses_bad", [], strategy=strategy)
+
+        assert result["passed"] is False
+        assert result["server_started"] is False
+
+    def test_server_timeout_fails(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("execution_engine.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("execution_engine._SMOKE_SERVER_TIMEOUT", 1)
+
+        # Use a command that runs but doesn't listen on the port
+        strategy = {
+            "smoke_test": {
+                "start_command": "sleep 10",
+                "endpoints": [{"path": "/", "method": "GET"}],
+            }
+        }
+        result = run_smoke_test("ses_timeout", [], strategy=strategy)
+
+        assert result["passed"] is False
+        assert result["server_started"] is False
+        assert "did not respond" in result["error"]
+
+    def test_smoke_result_in_execution(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("pipeline_schema.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("execution_engine.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+
+        from pipeline_schema import create_strategy, save_phase_output
+
+        strategy = create_strategy("ses_smoke_exec")
+        strategy["tasks"] = [{"id": "t1", "title": "Task", "tool": "claude", "priority": "medium"}]
+        save_phase_output(strategy, "strategy", "ses_smoke_exec")
+
+        execution = run_execution("ses_smoke_exec")
+
+        assert "smoke_test" in execution
+        assert execution["smoke_test"] is not None
+        # No start_command in strategy → skipped
+        assert execution["smoke_test"]["passed"] is True
 
 
 # ── execute_task ─────────────────────────────────────────────────────

@@ -71,6 +71,34 @@ python xLoop/scripts/execution_engine.py run <session_id>
 
 ---
 
+## Step 2b: Smoke Test
+
+실행 완료 후 자동으로 Smoke Test가 수행된다.
+
+- strategy.json에 `smoke_test.start_command`가 설정되어 있으면:
+  - 생성된 서비스를 임시 포트에서 기동
+  - `smoke_test.endpoints`에 정의된 엔드포인트에 HTTP 요청 전송
+  - 5xx 응답 = 실패, 4xx = 허용
+  - 서버 기동 실패 또는 런타임 에러 캐치
+- `start_command`가 없으면 Smoke Test를 스킵 (서버 없는 프로젝트)
+
+**strategy.json smoke_test 설정 예시:**
+```json
+{
+  "smoke_test": {
+    "start_command": "node dist/server.js --port {port}",
+    "endpoints": [
+      {"path": "/health", "method": "GET"},
+      {"path": "/api/v1/status", "method": "GET"}
+    ]
+  }
+}
+```
+
+결과는 `execution.json`의 `smoke_test` 필드에 기록된다.
+
+---
+
 ## Step 3: 검증 + 저장
 
 ### 3a. 검증 실행

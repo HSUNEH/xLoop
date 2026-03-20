@@ -53,23 +53,25 @@ STRATEGY_SCHEMA = {
 
 EXECUTION_SCHEMA = {
     "required": ["version", "session_id", "completed_at", "artifacts", "tasks_completed", "tasks_failed"],
-    "optional": ["total_cost"],
+    "optional": ["total_cost", "smoke_test"],
     "defaults": {
         "version": "1.0",
         "artifacts": [],
         "tasks_completed": 0,
         "tasks_failed": 0,
         "total_cost": None,
+        "smoke_test": None,
     },
 }
 
 VALIDATION_SCHEMA = {
     "required": ["version", "session_id", "completed_at", "passed", "drift_score"],
-    "optional": ["stage1_mechanical", "stage2_semantic", "stage3_consensus", "action", "feedback"],
+    "optional": ["stage0_runtime", "stage1_mechanical", "stage2_semantic", "stage3_consensus", "action", "feedback"],
     "defaults": {
         "version": "1.0",
         "passed": False,
         "drift_score": 1.0,
+        "stage0_runtime": None,
         "stage1_mechanical": {"passed": False, "checks": []},
         "stage2_semantic": {"passed": False, "spec_alignment": 0.0, "notes": []},
         "stage3_consensus": {
@@ -149,6 +151,7 @@ def create_execution(session_id) -> dict:
         "tasks_completed": 0,
         "tasks_failed": 0,
         "total_cost": None,
+        "smoke_test": None,
     }
 
 

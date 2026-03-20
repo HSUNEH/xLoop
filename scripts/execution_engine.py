@@ -2,7 +2,11 @@
 """Execution Engine — Tool Registry + strategy.json 작업 실행 → execution.json 생성."""
 
 import json
+import socket
+import subprocess
 import sys
+import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -102,6 +106,182 @@ def _now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+# ── Smoke Test ───────────────────────────────────────────────────────
+
+_SMOKE_SERVER_TIMEOUT = 30  # 서버 기동 대기 (초)
+_SMOKE_REQUEST_TIMEOUT = 10  # 엔드포인트 요청 타임아웃 (초)
+
+
+def _find_free_port() -> int:
+    """OS가 할당하는 사용 가능한 임시 포트를 반환한다."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
+
+
+def _wait_for_server(port, timeout):
+    """서버가 포트에서 응답할 때까지 대기한다. 성공하면 True."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1):
+                return True
+        except OSError:
+            time.sleep(0.5)
+    return False
+
+
+def _check_endpoint(port, path, method="GET"):
+    """단일 엔드포인트에 요청을 보내고 결과를 반환한다.
+
+    Returns:
+        dict: {path, method, status_code, passed, error}
+    """
+    url = f"http://127.0.0.1:{port}{path}"
+    try:
+        req = urllib.request.Request(url, method=method)
+        with urllib.request.urlopen(req, timeout=_SMOKE_REQUEST_TIMEOUT) as resp:
+            return {
+                "path": path,
+                "method": method,
+                "status_code": resp.status,
+                "passed": resp.status < 500,
+                "error": None,
+            }
+    except urllib.error.HTTPError as exc:
+        return {
+            "path": path,
+            "method": method,
+            "status_code": exc.code,
+            "passed": exc.code < 500,
+            "error": None if exc.code < 500 else f"HTTP {exc.code}",
+        }
+    except Exception as exc:
+        return {
+            "path": path,
+            "method": method,
+            "status_code": None,
+            "passed": False,
+            "error": str(exc),
+        }
+
+
+def run_smoke_test(session_id, artifacts, strategy=None):
+    """생성된 서비스를 임시 포트에서 기동하고 주요 엔드포인트를 테스트한다.
+
+    Args:
+        session_id: 파이프라인 세션 ID
+        artifacts: execute_task() 결과 리스트
+        strategy: strategy.json 데이터 (엔드포인트 목록 추출용)
+
+    Returns:
+        dict: {passed, server_started, port, endpoints, error}
+              passed=True이면 모든 엔드포인트가 5xx 없이 응답.
+              서버 기동 실패 시 passed=False, server_started=False.
+    """
+    from headless import log_progress
+
+    log_progress(session_id, "smoke_test", "Smoke test 시작")
+
+    # strategy에서 start_command와 endpoints 추출
+    smoke_config = (strategy or {}).get("smoke_test", {})
+    start_cmd = smoke_config.get("start_command")
+    endpoints = smoke_config.get("endpoints", [])
+
+    # start_command가 없으면 smoke test 스킵 (서버 없는 프로젝트)
+    if not start_cmd:
+        log_progress(session_id, "smoke_test", "start_command 미설정 — 스킵")
+        return {
+            "passed": True,
+            "server_started": False,
+            "port": None,
+            "endpoints": [],
+            "error": "start_command not configured — skipped",
+        }
+
+    # 기본 엔드포인트: 최소 health check
+    if not endpoints:
+        endpoints = [{"path": "/", "method": "GET"}]
+
+    port = _find_free_port()
+    # start_command 내 {port} 플레이스홀더 치환
+    cmd_str = start_cmd.replace("{port}", str(port))
+
+    # 서버 기동
+    try:
+        proc = subprocess.Popen(
+            cmd_str.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except Exception as exc:
+        log_progress(session_id, "smoke_test", f"서버 기동 실패: {exc}", level="error")
+        return {
+            "passed": False,
+            "server_started": False,
+            "port": port,
+            "endpoints": [],
+            "error": f"Server start failed: {exc}",
+        }
+
+    try:
+        # 서버 응답 대기
+        if not _wait_for_server(port, _SMOKE_SERVER_TIMEOUT):
+            # 프로세스가 이미 종료했는지 확인 (런타임 에러)
+            retcode = proc.poll()
+            stderr_out = ""
+            if retcode is not None:
+                stderr_out = proc.stderr.read().decode("utf-8", errors="replace")[:500]
+            log_progress(
+                session_id, "smoke_test",
+                f"서버 응답 타임아웃 (port={port}, retcode={retcode})",
+                level="error",
+            )
+            return {
+                "passed": False,
+                "server_started": False,
+                "port": port,
+                "endpoints": [],
+                "error": f"Server did not respond within {_SMOKE_SERVER_TIMEOUT}s. "
+                         f"retcode={retcode}, stderr={stderr_out}",
+            }
+
+        log_progress(session_id, "smoke_test", f"서버 기동 완료 (port={port})")
+
+        # 엔드포인트 테스트
+        results = []
+        for ep in endpoints:
+            path = ep.get("path", "/")
+            method = ep.get("method", "GET")
+            result = _check_endpoint(port, path, method)
+            results.append(result)
+
+        all_passed = all(r["passed"] for r in results)
+        passed_count = sum(1 for r in results if r["passed"])
+
+        log_progress(
+            session_id, "smoke_test",
+            f"완료: {passed_count}/{len(results)} 통과, passed={all_passed}",
+        )
+
+        return {
+            "passed": all_passed,
+            "server_started": True,
+            "port": port,
+            "endpoints": results,
+            "error": None,
+        }
+
+    finally:
+        # 서버 프로세스 정리
+        try:
+            proc.terminate()
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+            proc.wait(timeout=3)
+
+
 # ── Core functions ───────────────────────────────────────────────────
 
 def execute_task(task, session_id):
@@ -197,12 +377,17 @@ def run_execution(session_id):
         else:
             tasks_failed += 1
 
+    # Smoke test
+    smoke_result = run_smoke_test(session_id, artifacts, strategy=strategy)
+    log_progress(session_id, "execution", f"Smoke test passed={smoke_result['passed']}")
+
     # Build execution output
     execution = create_execution(session_id)
     execution["completed_at"] = _now_iso()
     execution["artifacts"] = artifacts
     execution["tasks_completed"] = tasks_completed
     execution["tasks_failed"] = tasks_failed
+    execution["smoke_test"] = smoke_result
 
     # Validate
     validation = validate_execution(execution)

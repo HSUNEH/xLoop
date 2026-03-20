@@ -18,6 +18,69 @@ def _now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+# ── Stage 0: Runtime Verification ──────────────────────────────────
+
+def run_stage0(execution):
+    """Stage 0: execution의 smoke_test 결과를 기반으로 런타임 검증.
+
+    smoke_test가 없으면 FAIL (런타임 테스트 미실행).
+    각 엔드포인트 결과를 checks[]로 변환.
+
+    Returns:
+        dict: {"passed": bool, "checks": list}
+    """
+    smoke = execution.get("smoke_test")
+
+    # smoke_test 필드 자체가 없거나 None
+    if smoke is None:
+        return {
+            "passed": False,
+            "checks": [{
+                "name": "smoke_test_exists",
+                "passed": False,
+                "detail": "smoke_test 미실행 — 런타임 검증 불가",
+            }],
+        }
+
+    checks = []
+
+    # 서버 기동 여부
+    server_started = smoke.get("server_started", False)
+    smoke_error = smoke.get("error")
+
+    # start_command 미설정으로 스킵된 경우 — 서버 없는 프로젝트
+    if not server_started and smoke_error and "skipped" in smoke_error:
+        return {
+            "passed": True,
+            "checks": [{
+                "name": "smoke_test_skipped",
+                "passed": True,
+                "detail": "start_command 미설정 — 서버 없는 프로젝트로 판단, 스킵",
+            }],
+        }
+
+    checks.append({
+        "name": "server_started",
+        "passed": server_started,
+        "detail": f"서버 기동 {'성공' if server_started else '실패'}"
+                  + (f" — {smoke_error}" if smoke_error and not server_started else ""),
+    })
+
+    # 엔드포인트별 검증
+    endpoints = smoke.get("endpoints", [])
+    for ep in endpoints:
+        checks.append({
+            "name": f"endpoint:{ep.get('method', '?')} {ep.get('path', '?')}",
+            "passed": ep.get("passed", False),
+            "detail": f"HTTP {ep.get('status_code', '?')}"
+                      + (f" — {ep['error']}" if ep.get("error") else ""),
+        })
+
+    passed = all(c["passed"] for c in checks) if checks else False
+
+    return {"passed": passed, "checks": checks}
+
+
 # ── Stage 1: Mechanical Verification ────────────────────────────────
 
 def run_stage1(spec, execution):
@@ -195,8 +258,12 @@ def critic(spec, execution, stage1, stage2):
     return "비판: " + "; ".join(points)
 
 
-def judge(advocate_text, critic_text, stage1, stage2):
+def judge(advocate_text, critic_text, stage0, stage1, stage2):
     """판사: 양쪽 의견을 종합하여 drift_score 산출.
+
+    Stage 0 런타임 실패는 치명적으로 반영:
+    - stage0 FAIL(전체): drift += 0.5
+    - stage0 부분 실패: drift += (실패 비율 × 0.3)
 
     Returns:
         dict: stage3_consensus structure
@@ -216,6 +283,21 @@ def judge(advocate_text, critic_text, stage1, stage2):
     scores.append(("stage2", 0.6, 1.0 - alignment))
 
     drift_score = sum(weight * score for _, weight, score in scores)
+
+    # Stage 0 가중치 반영
+    if stage0 is not None and not stage0.get("passed", True):
+        s0_checks = stage0.get("checks", [])
+        total_s0 = len(s0_checks)
+        passed_s0 = sum(1 for c in s0_checks if c.get("passed", False))
+
+        if total_s0 > 0 and passed_s0 == 0:
+            # 전체 실패 — 치명적
+            drift_score += 0.5
+        elif total_s0 > 0:
+            # 부분 실패
+            fail_ratio = (total_s0 - passed_s0) / total_s0
+            drift_score += fail_ratio * 0.3
+
     drift_score = round(min(1.0, max(0.0, drift_score)), 2)
 
     if drift_score <= DRIFT_THRESHOLD:
@@ -234,11 +316,11 @@ def judge(advocate_text, critic_text, stage1, stage2):
     }
 
 
-def run_stage3(spec, execution, stage1, stage2):
+def run_stage3(spec, execution, stage0, stage1, stage2):
     """Stage 3 합의 검증 실행."""
     advocate_text = advocate(spec, execution, stage1, stage2)
     critic_text = critic(spec, execution, stage1, stage2)
-    return judge(advocate_text, critic_text, stage1, stage2)
+    return judge(advocate_text, critic_text, stage0, stage1, stage2)
 
 
 # ── Determine Action ────────────────────────────────────────────────
@@ -275,18 +357,22 @@ def run_evaluation(session_id):
     spec = load_spec(session_id)
     execution = load_phase_output("execution", session_id)
 
+    # Stage 0: Runtime
+    stage0 = run_stage0(execution)
+
     # Stage 1: Mechanical
     stage1 = run_stage1(spec, execution)
 
     # Stage 2: Semantic
     stage2 = run_stage2(spec, execution)
 
-    # Stage 3: Consensus
-    stage3 = run_stage3(spec, execution, stage1, stage2)
+    # Stage 3: Consensus (Stage 0 가중치 포함)
+    stage3 = run_stage3(spec, execution, stage0, stage1, stage2)
 
     # Build validation output
     validation = create_validation(session_id)
     validation["completed_at"] = _now_iso()
+    validation["stage0_runtime"] = stage0
     validation["stage1_mechanical"] = stage1
     validation["stage2_semantic"] = stage2
     validation["stage3_consensus"] = stage3
@@ -296,6 +382,10 @@ def run_evaluation(session_id):
 
     # Collect feedback
     feedback = []
+    if not stage0.get("passed", False):
+        for check in stage0.get("checks", []):
+            if not check["passed"]:
+                feedback.append(f"[Stage0] {check['name']}: {check['detail']}")
     for check in stage1.get("checks", []):
         if not check["passed"]:
             feedback.append(f"[Stage1] {check['name']}: {check['detail']}")
@@ -323,6 +413,16 @@ def show_validation(validation):
     print(f"Action: {validation.get('action', '?')}")
 
     print()
+
+    # Stage 0
+    s0 = validation.get("stage0_runtime")
+    if s0 is not None:
+        s0_mark = "PASS" if s0.get("passed") else "FAIL"
+        print(f"Stage 0 (Runtime): {s0_mark}")
+        for check in s0.get("checks", []):
+            mark = "OK" if check["passed"] else "FAIL"
+            print(f"  [{mark}] {check['name']}: {check['detail']}")
+        print()
 
     # Stage 1
     s1 = validation.get("stage1_mechanical", {})
@@ -379,6 +479,17 @@ def _parse_cli(argv):
         validation = run_evaluation(session_id)
         print(json.dumps(validation, indent=2, ensure_ascii=False))
 
+    elif cmd == "stage0":
+        if len(argv) < 3:
+            print("Usage: evaluation_engine.py stage0 <session_id>", file=sys.stderr)
+            sys.exit(1)
+        from pipeline_schema import load_phase_output
+
+        session_id = argv[2]
+        execution = load_phase_output("execution", session_id)
+        result = run_stage0(execution)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
     elif cmd == "stage1":
         if len(argv) < 3:
             print("Usage: evaluation_engine.py stage1 <session_id>", file=sys.stderr)
@@ -415,9 +526,10 @@ def _parse_cli(argv):
         session_id = argv[2]
         spec = load_spec(session_id)
         execution = load_phase_output("execution", session_id)
+        stage0 = run_stage0(execution)
         stage1 = run_stage1(spec, execution)
         stage2 = run_stage2(spec, execution)
-        result = run_stage3(spec, execution, stage1, stage2)
+        result = run_stage3(spec, execution, stage0, stage1, stage2)
         print(json.dumps(result, indent=2, ensure_ascii=False))
 
     elif cmd == "show":
@@ -440,8 +552,9 @@ def _usage():
     print(
         "Usage: evaluation_engine.py <command> [args]\n\n"
         "Commands:\n"
-        "  full <session_id>     Run all 3 stages, save validation.json\n"
+        "  full <session_id>     Run all stages (0-3), save validation.json\n"
         "  check <session_id>    Alias for full\n"
+        "  stage0 <session_id>   Run Stage 0 (runtime) only\n"
         "  stage1 <session_id>   Run Stage 1 (mechanical) only\n"
         "  stage2 <session_id>   Run Stage 2 (semantic) only\n"
         "  stage3 <session_id>   Run Stage 3 (consensus) only\n"

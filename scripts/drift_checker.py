@@ -32,11 +32,16 @@ def check_drift(session_id):
     """validation.json에서 drift_score와 관련 정보를 읽는다.
 
     Returns:
-        dict: {"drift_score": float, "passed": bool, "action": str, "session_id": str}
+        dict: {"drift_score": float, "passed": bool, "action": str,
+               "session_id": str, "stage0_failed": bool}
     """
     from pipeline_schema import load_phase_output
 
     validation = load_phase_output("validation", session_id)
+
+    # Stage 0 실패 여부 확인
+    stage0 = validation.get("stage0_runtime")
+    stage0_failed = stage0 is not None and not stage0.get("passed", True)
 
     return {
         "session_id": session_id,
@@ -44,6 +49,7 @@ def check_drift(session_id):
         "passed": validation.get("passed", False),
         "action": validation.get("action", "pending"),
         "feedback": validation.get("feedback", []),
+        "stage0_failed": stage0_failed,
     }
 
 
@@ -60,7 +66,7 @@ def decide_action(drift_score):
     return "restart"
 
 
-def _log_drift(session_id, drift_score, action, reason=""):
+def _log_drift(session_id, drift_score, action, reason="", stage0_failed=False):
     """drift_log.json에 드리프트 기록을 추가한다."""
     pipeline_dir = _get_pipeline_dir(session_id)
     pipeline_dir.mkdir(parents=True, exist_ok=True)
@@ -73,12 +79,14 @@ def _log_drift(session_id, drift_score, action, reason=""):
         except (json.JSONDecodeError, ValueError):
             records = []
 
-    records.append({
+    entry = {
         "timestamp": _now_iso(),
         "drift_score": drift_score,
         "action": action,
         "reason": reason,
-    })
+        "stage0_failed": stage0_failed,
+    }
+    records.append(entry)
 
     log_path.write_text(
         json.dumps(records, indent=2, ensure_ascii=False) + "\n",
@@ -151,16 +159,30 @@ def run_drift_check(session_id, webhook_url=None):
     # 1. Check
     drift_info = check_drift(session_id)
     drift_score = drift_info["drift_score"]
+    stage0_failed = drift_info.get("stage0_failed", False)
 
     # 2. Decide
     action = decide_action(drift_score)
 
+    # Stage 0 FAIL 시 강제 backtrack (drift score와 무관)
+    if stage0_failed and action == "complete":
+        action = "backtrack"
+        headless.log_progress(
+            session_id, "phase5",
+            "Stage 0 런타임 실패 — drift score와 무관하게 backtrack 강제",
+            level="warning",
+        )
+
     # 3. Log
+    reason = f"feedback: {drift_info.get('feedback', [])}"
+    if stage0_failed:
+        reason = f"[STAGE0_FAIL] {reason}"
     _log_drift(session_id, drift_score, action,
-               reason=f"feedback: {drift_info.get('feedback', [])}")
+               reason=reason, stage0_failed=stage0_failed)
 
     headless.log_progress(session_id, "phase5",
-                 f"drift={drift_score}, action={action}", level="info")
+                 f"drift={drift_score}, action={action}, stage0_failed={stage0_failed}",
+                 level="info")
 
     # 4. Execute
     if action == "complete":

@@ -64,6 +64,12 @@ python xLoop/scripts/pipeline_schema.py load execution <session_id>
 python xLoop/scripts/evaluation_engine.py full <session_id>
 ```
 
+### Stage 0만 (런타임 검증)
+
+```
+python xLoop/scripts/evaluation_engine.py stage0 <session_id>
+```
+
 ### Stage 1만
 
 ```
@@ -71,6 +77,20 @@ python xLoop/scripts/evaluation_engine.py stage1 <session_id>
 ```
 
 결과 JSON을 파싱하여 진행 상황을 보여준다.
+
+### Stage 0: 런타임 검증 (Runtime Verification)
+
+Stage 1 실행 전에 자동 수행되는 런타임 검증 단계.
+
+- `execution.json`의 `smoke_test` 결과를 확인
+- `smoke_test`가 없으면 Stage 0 FAIL (런타임 테스트 미실행)
+- `start_command` 미설정으로 스킵된 경우는 PASS (서버 없는 프로젝트)
+- 각 엔드포인트 결과를 checks[]로 변환
+
+**Drift Score에 미치는 영향:**
+- Stage 0 전체 실패: drift += 0.5 (치명적)
+- Stage 0 부분 실패: drift += (실패 비율 x 0.3)
+- Stage 0 FAIL 시 drift_checker가 drift score와 무관하게 backtrack 강제
 
 ---
 
@@ -86,6 +106,7 @@ python xLoop/scripts/evaluation_engine.py show <session_id>
 >
 > | 항목 | 결과 |
 > |------|------|
+> | **Stage 0 (런타임)** | PASS/FAIL |
 > | **Stage 1 (기계적)** | PASS/FAIL |
 > | **Stage 2 (의미적)** | PASS/FAIL (정합성 N%) |
 > | **Stage 3 (합의)** | PASS/FAIL |

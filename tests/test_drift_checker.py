@@ -21,7 +21,8 @@ from drift_checker import (
 # ── Fixtures ────────────────────────────────────────────────────────
 
 
-def _make_validation(drift_score=0.1, passed=True, action="pass", feedback=None):
+def _make_validation(drift_score=0.1, passed=True, action="pass",
+                     feedback=None, stage0_runtime=None):
     return {
         "version": "1.0",
         "session_id": "ses_test",
@@ -29,6 +30,7 @@ def _make_validation(drift_score=0.1, passed=True, action="pass", feedback=None)
         "passed": passed,
         "drift_score": drift_score,
         "action": action,
+        "stage0_runtime": stage0_runtime,
         "stage1_mechanical": {"passed": True, "checks": []},
         "stage2_semantic": {"passed": True, "spec_alignment": 0.9, "notes": []},
         "stage3_consensus": {
@@ -290,6 +292,78 @@ class TestRunDriftCheck:
         assert progress_path.exists()
         content = progress_path.read_text(encoding="utf-8")
         assert "phase5" in content
+
+    def test_stage0_fail_forces_backtrack(self, tmp_path, monkeypatch):
+        """Stage 0 FAIL이면 drift score=0이어도 complete가 아닌 backtrack."""
+        monkeypatch.setattr("pipeline_schema.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("drift_checker.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr(
+            "headless.send_alert",
+            lambda title, body, webhook_url=None: None,
+        )
+
+        stage0_fail = {"passed": False, "checks": [
+            {"name": "server_started", "passed": False, "detail": "서버 기동 실패"},
+        ]}
+        validation = _make_validation(
+            drift_score=0.0,
+            stage0_runtime=stage0_fail,
+        )
+        _setup_validation(tmp_path, "ses_s0_fail", validation)
+
+        result = run_drift_check("ses_s0_fail")
+
+        assert result["action"] == "backtrack"  # not "complete"
+
+    def test_stage0_fail_logged_in_drift_log(self, tmp_path, monkeypatch):
+        """Stage 0 FAIL이 drift_log에 기록되는지 확인."""
+        monkeypatch.setattr("pipeline_schema.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("drift_checker.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr(
+            "headless.send_alert",
+            lambda title, body, webhook_url=None: None,
+        )
+
+        stage0_fail = {"passed": False, "checks": [
+            {"name": "server_started", "passed": False, "detail": "crash"},
+        ]}
+        validation = _make_validation(
+            drift_score=0.1,
+            stage0_runtime=stage0_fail,
+        )
+        _setup_validation(tmp_path, "ses_s0_log", validation)
+
+        run_drift_check("ses_s0_log")
+
+        log_path = tmp_path / "ses_s0_log" / "drift_log.json"
+        records = json.loads(log_path.read_text(encoding="utf-8"))
+        assert records[0]["stage0_failed"] is True
+        assert "STAGE0_FAIL" in records[0]["reason"]
+
+    def test_stage0_pass_no_override(self, tmp_path, monkeypatch):
+        """Stage 0 PASS이면 일반 로직으로 동작."""
+        monkeypatch.setattr("pipeline_schema.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("drift_checker.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr("headless.PIPELINES_DIR", tmp_path)
+        monkeypatch.setattr(
+            "headless.send_alert",
+            lambda title, body, webhook_url=None: None,
+        )
+
+        stage0_pass = {"passed": True, "checks": [
+            {"name": "ep1", "passed": True, "detail": "OK"},
+        ]}
+        validation = _make_validation(
+            drift_score=0.0,
+            stage0_runtime=stage0_pass,
+        )
+        _setup_validation(tmp_path, "ses_s0_pass", validation)
+
+        result = run_drift_check("ses_s0_pass")
+
+        assert result["action"] == "complete"
 
 
 # ── CLI ─────────────────────────────────────────────────────────────

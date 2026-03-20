@@ -70,6 +70,11 @@ class TestCreateExecution:
         assert data["tasks_failed"] == 0
         assert data["total_cost"] is None
 
+    def test_has_smoke_test_field(self):
+        data = create_execution("ses_001")
+        assert "smoke_test" in data
+        assert data["smoke_test"] is None
+
 
 class TestCreateValidation:
     def test_creates_blank_validation(self):
@@ -89,6 +94,16 @@ class TestCreateValidation:
         assert data["stage1_mechanical"]["passed"] is False
         assert data["stage2_semantic"]["spec_alignment"] == 0.0
         assert data["stage3_consensus"]["drift_score"] == 1.0
+
+    def test_stage0_runtime_in_schema(self):
+        from pipeline_schema import VALIDATION_SCHEMA
+        assert "stage0_runtime" in VALIDATION_SCHEMA["optional"]
+        assert VALIDATION_SCHEMA["defaults"]["stage0_runtime"] is None
+
+    def test_smoke_test_in_execution_schema(self):
+        from pipeline_schema import EXECUTION_SCHEMA
+        assert "smoke_test" in EXECUTION_SCHEMA["optional"]
+        assert EXECUTION_SCHEMA["defaults"]["smoke_test"] is None
 
 
 class TestCreateHandoff:
