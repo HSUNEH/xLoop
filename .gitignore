@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.xloop/state/
+.xloop/snapshots/
+.xloop/reports/
+.xloop/research/cache/
+*.tsbuildinfo
