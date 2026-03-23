@@ -111,6 +111,7 @@ def log_progress(session_id, phase, message, level="info") -> Path:
     """Append a structured log line to data/pipelines/{session_id}/progress.log.
 
     Format: [ISO-8601] [LEVEL] [phase] message
+    Also writes a parallel JSON Lines entry to progress.jsonl.
     """
     pipeline_dir = PIPELINES_DIR / session_id
     pipeline_dir.mkdir(parents=True, exist_ok=True)
@@ -122,7 +123,178 @@ def log_progress(session_id, phase, message, level="info") -> Path:
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(line)
 
+    # Parallel JSON Lines log
+    log_progress_structured(session_id, phase, message, level=level)
+
     return log_path
+
+
+def log_progress_structured(session_id, phase, message, level="info",
+                            duration_ms=None, error=None):
+    """Append a JSON Lines entry to data/pipelines/{session_id}/progress.jsonl."""
+    pipeline_dir = PIPELINES_DIR / session_id
+    pipeline_dir.mkdir(parents=True, exist_ok=True)
+    jsonl_path = pipeline_dir / "progress.jsonl"
+
+    entry = {
+        "ts": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "session_id": session_id,
+        "phase": phase,
+        "level": level,
+        "msg": message,
+    }
+    if duration_ms is not None:
+        entry["duration_ms"] = duration_ms
+    if error is not None:
+        entry["error"] = error
+
+    with open(jsonl_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def phase_timer():
+    """Return a timer dict. Call phase_timer_end() to get elapsed ms."""
+    return {"start": time.monotonic()}
+
+
+def phase_timer_end(timer):
+    """Return elapsed milliseconds since phase_timer() was called."""
+    return round((time.monotonic() - timer["start"]) * 1000)
+
+
+def summarize_logs(session_id):
+    """Summarize progress.jsonl: count errors, warnings, and phases.
+
+    Returns a dict with totals and per-phase breakdown.
+    """
+    jsonl_path = PIPELINES_DIR / session_id / "progress.jsonl"
+    if not jsonl_path.exists():
+        return {"session_id": session_id, "total": 0, "errors": 0, "warnings": 0, "phases": {}}
+
+    total = 0
+    errors = 0
+    warnings = 0
+    phases = {}
+
+    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        total += 1
+        level = entry.get("level", "info")
+        if level == "error":
+            errors += 1
+        elif level == "warning":
+            warnings += 1
+
+        phase = entry.get("phase", "unknown")
+        if phase not in phases:
+            phases[phase] = {"count": 0, "errors": 0, "warnings": 0}
+        phases[phase]["count"] += 1
+        if level == "error":
+            phases[phase]["errors"] += 1
+        elif level == "warning":
+            phases[phase]["warnings"] += 1
+
+    return {
+        "session_id": session_id,
+        "total": total,
+        "errors": errors,
+        "warnings": warnings,
+        "phases": phases,
+    }
+
+
+def generate_dashboard(session_id):
+    """Generate dashboard data for a pipeline session.
+
+    Returns dict with phase statuses, costs, drift scores, errors.
+    """
+    pipeline_dir = PIPELINES_DIR / session_id
+    if not pipeline_dir.exists():
+        return {"session_id": session_id, "phases": [], "total_cost": 0, "errors": 0, "warnings": 0}
+
+    # Cost data
+    cost_log_path = pipeline_dir / "cost_log.json"
+    cost_records = []
+    total_cost = 0
+    if cost_log_path.exists():
+        try:
+            cost_records = json.loads(cost_log_path.read_text(encoding="utf-8"))
+            total_cost = sum(r.get("cost", 0) for r in cost_records)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # Phase cost breakdown
+    phase_costs = {}
+    for r in cost_records:
+        p = r.get("phase", -1)
+        phase_costs[p] = phase_costs.get(p, 0) + r.get("cost", 0)
+
+    # Drift trend from validation_history
+    drift_trend = []
+    history_path = pipeline_dir / "validation_history.json"
+    if history_path.exists():
+        try:
+            records = json.loads(history_path.read_text(encoding="utf-8"))
+            drift_trend = [r.get("drift_score", 1.0) for r in records]
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # Log summary
+    log_summary = summarize_logs(session_id)
+
+    return {
+        "session_id": session_id,
+        "total_cost": total_cost,
+        "phase_costs": phase_costs,
+        "drift_trend": drift_trend,
+        "errors": log_summary.get("errors", 0),
+        "warnings": log_summary.get("warnings", 0),
+        "log_entries": log_summary.get("total", 0),
+    }
+
+
+def generate_summary(session_id):
+    """Generate a pipeline execution summary and save to summary.json.
+
+    Returns the summary dict.
+    """
+    from _io_utils import _atomic_write_json
+
+    dashboard = generate_dashboard(session_id)
+    pipeline_dir = PIPELINES_DIR / session_id
+
+    # Backtrack count from drift_log
+    backtrack_count = 0
+    drift_log_path = pipeline_dir / "drift_log.json"
+    if drift_log_path.exists():
+        try:
+            drift_records = json.loads(drift_log_path.read_text(encoding="utf-8"))
+            backtrack_count = sum(1 for r in drift_records if r.get("action") == "backtrack")
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    summary = {
+        "session_id": session_id,
+        "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "total_cost": dashboard["total_cost"],
+        "phase_costs": dashboard["phase_costs"],
+        "drift_trend": dashboard["drift_trend"],
+        "backtrack_count": backtrack_count,
+        "errors": dashboard["errors"],
+        "warnings": dashboard["warnings"],
+        "log_entries": dashboard["log_entries"],
+    }
+
+    pipeline_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = pipeline_dir / "summary.json"
+    _atomic_write_json(summary_path, summary)
+
+    return summary
 
 
 def send_alert(title, body, webhook_url=None):

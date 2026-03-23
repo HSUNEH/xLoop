@@ -1,0 +1,39 @@
+{
+  "tools": {
+    "claude": {
+      "label": "Claude AI",
+      "type": "generation",
+      "keywords": ["code", "script", "automation", "write", "코드", "스크립트", "자동화", "작성"],
+      "script": null,
+      "enabled": true
+    },
+    "dall-e": {
+      "label": "DALL-E",
+      "type": "image",
+      "keywords": ["image", "thumbnail", "visual", "picture", "illustration", "그림", "썸네일", "이미지"],
+      "script": null,
+      "enabled": true
+    },
+    "flux": {
+      "label": "Flux",
+      "type": "video",
+      "keywords": ["video", "animation", "motion", "영상", "애니메이션", "동영상"],
+      "script": null,
+      "enabled": true
+    },
+    "notebooklm": {
+      "label": "NotebookLM",
+      "type": "document",
+      "keywords": ["document", "report", "summary", "분석", "보고서", "요약", "문서"],
+      "script": null,
+      "enabled": true
+    },
+    "web_search": {
+      "label": "Web Search",
+      "type": "search",
+      "keywords": ["search", "research", "find", "검색", "조사", "탐색"],
+      "script": null,
+      "enabled": true
+    }
+  }
+}

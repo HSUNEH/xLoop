@@ -146,8 +146,73 @@ def _check_quantitative(criterion, execution):
 
 # ── Stage 2: Semantic Verification ──────────────────────────────────
 
+SEMANTIC_MATCH_WEIGHTS = {
+    "keyword": 0.3,
+    "tool_type": 0.3,
+    "completeness": 0.4,
+}
+
+
+def _keyword_match(deliverable, artifacts):
+    """Layer 1: keyword matching score (0.0-1.0)."""
+    artifact_texts = " ".join(
+        str(a.get("artifact", {}).get("output", "") if isinstance(a.get("artifact"), dict) else a.get("artifact", ""))
+        + " " + str(a.get("task_id", ""))
+        for a in artifacts
+    ).lower()
+    words = [w for w in deliverable.lower().split() if len(w) > 2]
+    if not words:
+        return 0.0
+    matched = sum(1 for w in words if w in artifact_texts)
+    return matched / len(words)
+
+
+def _tool_type_match(deliverable, artifacts):
+    """Layer 2: tool type matching — does the deliverable's implied tool match actual tools used?"""
+    # Simple heuristic: check if artifact tools match deliverable keywords
+    tool_hints = {
+        "image": ["dall-e"], "이미지": ["dall-e"], "그림": ["dall-e"],
+        "video": ["flux"], "영상": ["flux"], "동영상": ["flux"],
+        "document": ["notebooklm", "claude"], "문서": ["notebooklm", "claude"],
+        "code": ["claude"], "코드": ["claude"],
+        "search": ["web_search"], "검색": ["web_search"],
+    }
+    d_lower = deliverable.lower()
+    expected_tools = set()
+    for hint, tools in tool_hints.items():
+        if hint in d_lower:
+            expected_tools.update(tools)
+
+    if not expected_tools:
+        return 1.0  # No specific tool expected → pass
+
+    actual_tools = set(
+        a.get("tool", "") or (a.get("artifact", {}).get("tool", "") if isinstance(a.get("artifact"), dict) else "")
+        for a in artifacts
+    )
+    overlap = expected_tools & actual_tools
+    return len(overlap) / len(expected_tools) if expected_tools else 1.0
+
+
+def _artifact_completeness(artifacts):
+    """Layer 3: artifact completeness (ratio of non-failed artifacts)."""
+    if not artifacts:
+        return 0.0
+    done = sum(1 for a in artifacts if a.get("status") == "done")
+    return done / len(artifacts)
+
+
+def _semantic_match_score(deliverable, artifacts):
+    """Multi-layer matching: keyword + tool_type + completeness."""
+    kw = _keyword_match(deliverable, artifacts)
+    tt = _tool_type_match(deliverable, artifacts)
+    comp = _artifact_completeness(artifacts)
+    w = SEMANTIC_MATCH_WEIGHTS
+    return w["keyword"] * kw + w["tool_type"] * tt + w["completeness"] * comp
+
+
 def run_stage2(spec, execution):
-    """Stage 2: spec과 execution의 정성적 정합성 평가.
+    """Stage 2: spec과 execution의 정성적 정합성 평가 (다층 매칭).
 
     Returns:
         dict: {"passed": bool, "spec_alignment": float, "notes": list}
@@ -158,25 +223,15 @@ def run_stage2(spec, execution):
     deliverables = spec.get("goal", {}).get("deliverables", [])
     artifacts = execution.get("artifacts", [])
 
-    # Deliverable coverage
+    # Multi-layer deliverable matching
     if deliverables:
-        artifact_texts = " ".join(
-            str(a.get("artifact", {}).get("output", "") if isinstance(a.get("artifact"), dict) else a.get("artifact", ""))
-            + " " + str(a.get("task_id", ""))
-            for a in artifacts
-        ).lower()
-
-        covered = 0
         for d in deliverables:
-            words = [w for w in d.lower().split() if len(w) > 2]
-            if any(w in artifact_texts for w in words):
-                covered += 1
-                notes.append(f"deliverable 매칭: {d[:50]}")
+            score = _semantic_match_score(d, artifacts)
+            scores.append(score)
+            if score >= 0.5:
+                notes.append(f"deliverable 매칭 ({score:.2f}): {d[:50]}")
             else:
-                notes.append(f"deliverable 미매칭: {d[:50]}")
-
-        coverage = covered / len(deliverables)
-        scores.append(coverage)
+                notes.append(f"deliverable 미매칭 ({score:.2f}): {d[:50]}")
     else:
         notes.append("deliverables 미정의")
         scores.append(0.5)
@@ -200,6 +255,122 @@ def run_stage2(spec, execution):
     passed = spec_alignment >= 0.7
 
     return {"passed": passed, "spec_alignment": spec_alignment, "notes": notes}
+
+
+# ── Cross-source validation ─────────────────────────────────────────
+
+def cross_validate_findings(research_data):
+    """Validate findings across multiple source types.
+
+    Findings confirmed by multiple source types get higher confidence.
+
+    Args:
+        research_data: dict with "findings" and "sources" lists
+
+    Returns:
+        dict: {"findings": [{finding, confidence, source_types}...], "avg_confidence": float}
+    """
+    findings = research_data.get("findings", [])
+    sources = research_data.get("sources", [])
+
+    if not findings:
+        return {"findings": [], "avg_confidence": 0.0}
+
+    # Get unique source types
+    source_types = set()
+    for s in sources:
+        st = s.get("type") or s.get("source_type") or "unknown"
+        source_types.add(st)
+    total_types = max(len(source_types), 1)
+
+    results = []
+    for finding in findings:
+        finding_text = str(finding).lower()
+        # Count how many source types mention keywords from this finding
+        confirmed_types = set()
+        for s in sources:
+            st = s.get("type") or s.get("source_type") or "unknown"
+            source_text = str(s.get("content", "") or s.get("title", "")).lower()
+            # Simple overlap check
+            finding_words = [w for w in finding_text.split() if len(w) > 3]
+            if finding_words and any(w in source_text for w in finding_words):
+                confirmed_types.add(st)
+
+        confidence = len(confirmed_types) / total_types
+        results.append({
+            "finding": str(finding)[:200],
+            "confidence": round(confidence, 2),
+            "source_types": sorted(confirmed_types),
+        })
+
+    avg = sum(r["confidence"] for r in results) / len(results) if results else 0.0
+    return {"findings": results, "avg_confidence": round(avg, 2)}
+
+
+# ── Evaluation history ──────────────────────────────────────────────
+
+def save_validation_history(session_id, validation):
+    """Append validation result to validation_history.json."""
+    from _io_utils import _atomic_write_json
+
+    pipeline_dir = PIPELINES_DIR / session_id
+    pipeline_dir.mkdir(parents=True, exist_ok=True)
+    history_path = pipeline_dir / "validation_history.json"
+
+    records = []
+    if history_path.exists():
+        try:
+            records = json.loads(history_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            records = []
+
+    entry = {
+        "timestamp": _now_iso(),
+        "drift_score": validation.get("drift_score", 1.0),
+        "passed": validation.get("passed", False),
+        "action": validation.get("action", "pending"),
+        "spec_alignment": validation.get("stage2_semantic", {}).get("spec_alignment", 0.0),
+    }
+    records.append(entry)
+    _atomic_write_json(history_path, records)
+    return history_path
+
+
+def show_trend(session_id):
+    """Show drift score trend across evaluations.
+
+    Returns:
+        dict: {"session_id": str, "evaluations": int, "drift_scores": list, "trend": str}
+    """
+    pipeline_dir = PIPELINES_DIR / session_id
+    history_path = pipeline_dir / "validation_history.json"
+
+    if not history_path.exists():
+        return {"session_id": session_id, "evaluations": 0, "drift_scores": [], "trend": "none"}
+
+    try:
+        records = json.loads(history_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, ValueError):
+        return {"session_id": session_id, "evaluations": 0, "drift_scores": [], "trend": "none"}
+
+    scores = [r.get("drift_score", 1.0) for r in records]
+
+    # Determine trend
+    if len(scores) < 2:
+        trend = "insufficient"
+    elif scores[-1] < scores[0]:
+        trend = "improving"
+    elif scores[-1] > scores[0]:
+        trend = "degrading"
+    else:
+        trend = "stable"
+
+    return {
+        "session_id": session_id,
+        "evaluations": len(records),
+        "drift_scores": scores,
+        "trend": trend,
+    }
 
 
 # ── Stage 3: Consensus Verification (B+C) ──────────────────────────

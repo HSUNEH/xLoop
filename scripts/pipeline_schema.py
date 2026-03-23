@@ -229,16 +229,27 @@ def validate_validation(data) -> dict:
 
 
 def validate_handoff(data) -> dict:
-    """Validate a handoff record."""
+    """Validate a handoff record.
+
+    Supports two handoff types:
+    - "forward" (default): from_phase < to_phase required
+    - "backtrack": from_phase > to_phase allowed (drift-triggered re-execution)
+    """
     result = _validate_against_schema(data, HANDOFF_SCHEMA, "handoff")
-    # Extra check: from_phase < to_phase
+    handoff_type = data.get("type", "forward")
     fp = data.get("from_phase")
     tp = data.get("to_phase")
-    if isinstance(fp, int) and isinstance(tp, int) and fp >= tp:
-        result["valid"] = False
-        result.setdefault("errors", []).append(
-            f"from_phase ({fp}) must be less than to_phase ({tp})"
-        )
+    if isinstance(fp, int) and isinstance(tp, int):
+        if handoff_type == "forward" and fp >= tp:
+            result["valid"] = False
+            result.setdefault("errors", []).append(
+                f"from_phase ({fp}) must be less than to_phase ({tp}) for forward handoff"
+            )
+        elif handoff_type == "backtrack" and fp <= tp:
+            result["valid"] = False
+            result.setdefault("errors", []).append(
+                f"from_phase ({fp}) must be greater than to_phase ({tp}) for backtrack handoff"
+            )
     return result
 
 
@@ -263,10 +274,9 @@ def save_phase_output(data, phase_name, session_id) -> Path:
 
     pipeline_dir = _get_pipeline_dir(session_id)
     path = pipeline_dir / filename
-    path.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    from _io_utils import _atomic_write_json
+
+    _atomic_write_json(path, data)
     return path
 
 

@@ -7,6 +7,39 @@ from pathlib import Path
 
 PIPELINES_DIR = Path(__file__).resolve().parent.parent / "data" / "pipelines"
 
+# ── Phase preconditions ─────────────────────────────────────────────
+
+PHASE_PRECONDITIONS = {
+    0: lambda spec, ctx: True,   # Big Bang: always run
+    1: lambda spec, ctx: True,   # Research: always run
+    2: lambda spec, ctx: ctx.get("research_findings_count", 0) > 0,
+    3: lambda spec, ctx: ctx.get("strategy_tasks_count", 0) > 0,
+    4: lambda spec, ctx: ctx.get("execution_artifacts_count", 0) > 0,
+    5: lambda spec, ctx: True,   # Drift Check: always run
+}
+
+
+def should_run_phase(phase_num, spec, context=None):
+    """Decide whether a phase should run based on preconditions and active_phases.
+
+    Args:
+        phase_num: phase number (0-5)
+        spec: pipeline spec dict
+        context: runtime context dict with counts (optional)
+
+    Returns:
+        bool: True if the phase should execute
+    """
+    context = context or {}
+    active = spec.get("pipeline", {}).get("active_phases", [0, 1, 2, 3, 4, 5])
+    if phase_num not in active:
+        return False
+    precondition = PHASE_PRECONDITIONS.get(phase_num)
+    if precondition is None:
+        return True
+    return precondition(spec, context)
+
+
 # ── Schema ──────────────────────────────────────────────────────────
 
 SPEC_SCHEMA = {
@@ -152,9 +185,9 @@ def save_spec(spec: dict, session_id: str) -> Path:
     """Save a Pipeline Spec to data/pipelines/{session_id}/spec.json."""
     spec_dir = _get_pipeline_dir(session_id)
     path = spec_dir / "spec.json"
-    path.write_text(
-        json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    from _io_utils import _atomic_write_json
+
+    _atomic_write_json(path, spec
     )
     return path
 

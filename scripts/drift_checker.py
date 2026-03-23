@@ -66,6 +66,63 @@ def decide_action(drift_score):
     return "restart"
 
 
+def decide_backtrack_target(drift_info):
+    """Determine which phase to backtrack to based on evaluation feedback.
+
+    Args:
+        drift_info: dict with "feedback" list containing stage markers like "[Stage0]", "[Stage1]", "[Stage2]"
+
+    Returns:
+        int: target phase number (2 or 3)
+    """
+    feedback = drift_info.get("feedback", [])
+    feedback_text = " ".join(str(f) for f in feedback)
+
+    # Stage 0 runtime failure → Phase 3 (Execution) re-run
+    if "[Stage0]" in feedback_text:
+        return 3
+
+    # Stage 1 mechanical failure → Phase 3 (Execution) re-run
+    if "[Stage1]" in feedback_text:
+        return 3
+
+    # Stage 2 semantic mismatch → Phase 2 (Strategy) re-plan
+    if "[Stage2]" in feedback_text:
+        return 2
+
+    # Default: Phase 2
+    return 2
+
+
+def create_backtrack_handoff(from_phase, to_phase, session_id, drift_info=None):
+    """Create a backtrack handoff record.
+
+    Args:
+        from_phase: source phase (e.g. 5)
+        to_phase: target phase (e.g. 2 or 3)
+        session_id: pipeline session ID
+        drift_info: optional drift info dict for reason field
+
+    Returns:
+        dict: handoff record with type="backtrack"
+    """
+    reason = ""
+    if drift_info:
+        feedback = drift_info.get("feedback", [])
+        reason = "; ".join(str(f) for f in feedback[:3]) if feedback else "drift detected"
+
+    return {
+        "version": "1.0",
+        "from_phase": from_phase,
+        "to_phase": to_phase,
+        "session_id": session_id,
+        "timestamp": _now_iso(),
+        "status": "backtrack",
+        "type": "backtrack",
+        "reason": reason,
+    }
+
+
 def _log_drift(session_id, drift_score, action, reason="", stage0_failed=False):
     """drift_log.json에 드리프트 기록을 추가한다."""
     pipeline_dir = _get_pipeline_dir(session_id)
@@ -88,9 +145,9 @@ def _log_drift(session_id, drift_score, action, reason="", stage0_failed=False):
     }
     records.append(entry)
 
-    log_path.write_text(
-        json.dumps(records, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    from _io_utils import _atomic_write_json
+
+    _atomic_write_json(log_path, records
     )
     return log_path
 

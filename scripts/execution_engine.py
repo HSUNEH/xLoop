@@ -96,8 +96,90 @@ def _register_defaults():
     register_tool("web_search", _stub_web_search)
 
 
-# Auto-register on import
-_register_defaults()
+# ── Tool manifest ───────────────────────────────────────────────────
+
+_MANIFEST_PATH = Path(__file__).resolve().parent.parent / "data" / "tool_manifest.json"
+
+_DEFAULT_STUBS = {
+    "claude": _stub_claude,
+    "dall-e": _stub_dall_e,
+    "flux": _stub_flux,
+    "notebooklm": _stub_notebooklm,
+    "web_search": _stub_web_search,
+}
+
+
+def load_tool_manifest():
+    """Load tool manifest from data/tool_manifest.json. Returns None if missing."""
+    if not _MANIFEST_PATH.exists():
+        return None
+    try:
+        return json.loads(_MANIFEST_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def register_tools_from_manifest():
+    """Register tools from manifest. Falls back to defaults if manifest missing."""
+    global _TOOL_REGISTRY
+    _TOOL_REGISTRY.clear()
+
+    manifest = load_tool_manifest()
+    if manifest is None:
+        _register_defaults()
+        return
+
+    for name, config in manifest.get("tools", {}).items():
+        if not config.get("enabled", True):
+            continue
+        # Use existing stub if available, otherwise register a generic stub
+        if name in _DEFAULT_STUBS:
+            register_tool(name, _DEFAULT_STUBS[name])
+        else:
+            # External tool: create a stub that indicates the tool name
+            def _make_external_stub(tool_name):
+                def _external_stub(task, session_id):
+                    return {
+                        "type": "external",
+                        "task_id": task["id"],
+                        "tool": tool_name,
+                        "output": f"[external] {tool_name} for: {task.get('title', task['id'])}",
+                    }
+                return _external_stub
+            register_tool(name, _make_external_stub(name))
+
+
+def check_tool_health(tool_name=None):
+    """Check health of registered tools.
+
+    Args:
+        tool_name: specific tool to check, or None for all tools.
+
+    Returns:
+        dict: {tool_name: {"available": bool, "enabled": bool}}
+    """
+    manifest = load_tool_manifest()
+    results = {}
+
+    if tool_name:
+        names = [tool_name]
+    else:
+        names = list(_TOOL_REGISTRY.keys())
+        if manifest:
+            names = list(set(names) | set(manifest.get("tools", {}).keys()))
+
+    for name in sorted(names):
+        registered = name in _TOOL_REGISTRY
+        enabled = True
+        if manifest and name in manifest.get("tools", {}):
+            enabled = manifest["tools"][name].get("enabled", True)
+        results[name] = {"available": registered, "enabled": enabled}
+
+    return results
+
+
+# Auto-register on import (manifest-aware)
+register_tools_from_manifest()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────

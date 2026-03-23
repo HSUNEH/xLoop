@@ -35,9 +35,9 @@ def _load_goal_state(session_id: str) -> dict:
 def _save_goal_state(session_id: str, state: dict) -> None:
     """Save goal loop state to goal_state.json."""
     path = _get_pipeline_dir(session_id) / "goal_state.json"
-    path.write_text(
-        json.dumps(state, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    from _io_utils import _atomic_write_json
+
+    _atomic_write_json(path, state
     )
 
 

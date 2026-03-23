@@ -9,7 +9,7 @@ PIPELINES_DIR = Path(__file__).resolve().parent.parent / "data" / "pipelines"
 
 # ── Tool mapping keywords ────────────────────────────────────────────
 
-_TOOL_KEYWORDS = {
+_HARDCODED_TOOL_KEYWORDS = {
     "dall-e": ["image", "thumbnail", "visual", "picture", "illustration", "그림", "썸네일", "이미지"],
     "flux": ["video", "animation", "motion", "영상", "애니메이션", "동영상"],
     "notebooklm": ["document", "report", "summary", "분석", "보고서", "요약", "문서"],
@@ -18,6 +18,34 @@ _TOOL_KEYWORDS = {
 }
 
 _DEFAULT_TOOL = "claude"
+
+
+def build_tool_keywords():
+    """Build tool keywords from manifest, falling back to hardcoded defaults.
+
+    Merge strategy: per-tool override — if a tool exists in the manifest with
+    keywords, those replace the hardcoded keywords for that tool entirely.
+    Tools not in the manifest keep their hardcoded keywords.
+    """
+    result = dict(_HARDCODED_TOOL_KEYWORDS)
+    manifest_path = Path(__file__).resolve().parent.parent / "data" / "tool_manifest.json"
+    if not manifest_path.exists():
+        return result
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return result
+    for name, config in manifest.get("tools", {}).items():
+        if not config.get("enabled", True):
+            result.pop(name, None)
+            continue
+        keywords = config.get("keywords")
+        if keywords:
+            result[name] = keywords
+    return result
+
+
+_TOOL_KEYWORDS = build_tool_keywords()
 
 
 # ── Diverge ──────────────────────────────────────────────────────────

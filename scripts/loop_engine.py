@@ -43,11 +43,11 @@ def _load_session(session_id: str) -> dict:
 
 
 def _save_session(session: dict) -> None:
-    """Write a session dict to its JSON file."""
+    """Write a session dict to its JSON file (atomic write)."""
+    from _io_utils import _atomic_write_json
+
     path = _get_sessions_dir() / f"{session['id']}.json"
-    path.write_text(
-        json.dumps(session, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    _atomic_write_json(path, session
     )
 
 

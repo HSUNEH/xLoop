@@ -72,20 +72,25 @@ def load_session(session_id: str) -> dict:
         raise FileNotFoundError(f"Session not found: {session_id}")
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+    except json.JSONDecodeError:
+        # Attempt .bak recovery
+        from _io_utils import load_json_with_recovery
+
+        try:
+            return load_json_with_recovery(path)
+        except FileNotFoundError:
+            pass
         raise ValueError(
-            f"Session file is corrupted: {path}\n"
-            f"Fix the JSON manually or delete the file to discard: {exc}"
-        ) from exc
+            f"Session file is corrupted and no backup available: {path}"
+        )
 
 
 def save_session(session: dict) -> None:
-    """Write a session dict to its JSON file."""
+    """Write a session dict to its JSON file (atomic, with .bak rotation)."""
+    from _io_utils import save_json_with_backup
+
     path = get_sessions_dir() / f"{session['id']}.json"
-    path.write_text(
-        json.dumps(session, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    save_json_with_backup(path, session)
 
 
 def list_sessions(status: str | None = None) -> list[dict]:
