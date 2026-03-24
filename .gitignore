@@ -5,3 +5,4 @@ dist/
 .xloop/reports/
 .xloop/research/cache/
 *.tsbuildinfo
+assets/
