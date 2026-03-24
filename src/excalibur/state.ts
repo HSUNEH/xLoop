@@ -1,6 +1,6 @@
-import { readState, writeState } from './state.js'
+import { readState, writeState } from '../state.js'
 
-interface CompletedLoop {
+export interface CompletedLoop {
   loop: number
   milestone: string
   plan: string
@@ -8,13 +8,13 @@ interface CompletedLoop {
   learnings: string
 }
 
-interface ActiveLane {
+export interface ActiveLane {
   lane: string
   milestone: string
   status: 'pending' | 'in_progress' | 'completed'
 }
 
-interface ExcaliburState {
+export interface ExcaliburState {
   active: boolean
   projectSpec: string
   currentLoop: number
@@ -49,5 +49,3 @@ export function getProjectProgress(state: ExcaliburState): {
 
   return { completedMilestones: completed, totalMilestones: total, percentage }
 }
-
-export type { ExcaliburState, CompletedLoop, ActiveLane }

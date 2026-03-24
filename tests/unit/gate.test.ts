@@ -68,9 +68,9 @@ describe('assessComplexity', () => {
   })
 
   describe('micro-assessment — uncertain cases', () => {
-    it('falls back to haiku method when uncertain', () => {
+    it('falls back to heuristic method when uncertain', () => {
       const result = assessComplexity('do something with the code')
-      expect(result.method).toBe('haiku')
+      expect(result.method).toBe('heuristic')
     })
 
     it('vague multi-line prompt gets higher score', () => {

@@ -1,4 +1,5 @@
 import { readConfig } from './state.js'
+import type { LLMBridge } from './llm-bridge.js'
 
 interface GateResult {
   score: 1 | 2 | 3
@@ -85,7 +86,7 @@ function microAssessment(prompt: string): GateResult {
 
   return {
     score,
-    method: 'haiku',
+    method: 'heuristic',
     details: `scope=${scope} clarity=${clarity} decision=${decision} weighted=${weighted.toFixed(2)}`
   }
 }
@@ -98,6 +99,42 @@ export function assessComplexity(prompt: string): GateResult {
     return { score: heuristic.score, method: 'heuristic', details: heuristic.details }
   }
 
-  // Step 2: Haiku micro-assessment (when heuristic is uncertain)
+  // Step 2: deterministic micro-assessment (when heuristic is uncertain)
   return microAssessment(prompt)
+}
+
+export async function assessComplexityAsync(
+  prompt: string,
+  bridge?: LLMBridge
+): Promise<GateResult> {
+  const heuristic = heuristicScore(prompt)
+  if (heuristic.certain) {
+    return { score: heuristic.score, method: 'heuristic', details: heuristic.details }
+  }
+
+  if (!bridge) {
+    return microAssessment(prompt)
+  }
+
+  try {
+    const result = await bridge.complete({
+      prompt: `Rate this task's complexity on 3 dimensions (scope, clarity, decision) each 1-3.\nTask: ${prompt}`,
+      systemPrompt: 'You are a complexity assessor. Respond with JSON: {"scope":N,"clarity":N,"decision":N}',
+      model: 'haiku',
+      maxTokens: 100,
+      temperature: 0.1
+    })
+
+    const parsed = JSON.parse(result.text) as { scope: number; clarity: number; decision: number }
+    const weighted = (parsed.scope * 0.4) + (parsed.clarity * 0.35) + (parsed.decision * 0.25)
+    const score: 1 | 2 | 3 = weighted <= 1.5 ? 1 : weighted <= 2.2 ? 2 : 3
+
+    return {
+      score,
+      method: result.provider === 'heuristic' ? 'heuristic' : 'haiku',
+      details: `scope=${parsed.scope} clarity=${parsed.clarity} decision=${parsed.decision} weighted=${weighted.toFixed(2)} (${result.provider})`
+    }
+  } catch {
+    return microAssessment(prompt)
+  }
 }

@@ -17,7 +17,7 @@ function getVersion(): string {
 
 const COMMANDS: Record<string, { description: string; usage: string }> = {
   setup:     { description: 'Install and configure xLoop',          usage: 'xloop setup [--local|--global|--force]' },
-  excalibur: { description: 'Full project orchestration (the essence of xLoop)', usage: 'xloop excalibur <description>' },
+  excalibur: { description: 'Full project orchestration (the essence of xLoop)', usage: 'xloop excalibur [autohunt|grab] <description>' },
   ralph:     { description: 'PRD-driven implementation loop',       usage: 'xloop ralph <task>' },
   ralplan:   { description: '4-agent consensus planning',           usage: 'xloop ralplan <task>' },
   research:  { description: 'Multi-source research',                usage: 'xloop research <topic>' },
@@ -46,16 +46,20 @@ FLAGS:
   --version    Show version
 
 EXAMPLES:
-  xloop setup                    # First-time setup
-  xloop excalibur "chat app"     # Full project orchestration
-  xloop ralph "fix auth bug"     # Implementation loop
-  xloop ralplan "new feature"    # Consensus planning
-  xloop research "WebSocket"     # Standalone research
+  xloop setup                          # First-time setup
+  xloop excalibur "chat app"           # Full project orchestration (autohunt mode)
+  xloop excalibur grab "chat app"      # Grab-and-go mode
+  xloop excalibur autohunt "chat app"  # Auto-hunt mode (explicit)
+  xloop ralph "fix auth bug"           # Implementation loop
+  xloop ralplan "new feature"          # Consensus planning
+  xloop research "WebSocket"           # Standalone research
 
 KEYWORDS (use naturally in Claude Code):
-  "excalibur ..."   → full project orchestration
-  "ralph ..."       → implementation loop
-  "ralplan ..."     → consensus planning
+  "excalibur ..."        → full project orchestration
+  "excalibur autohunt"   → auto-hunt mode (iterates until goal met)
+  "excalibur grab"       → grab-and-go mode (single-pass)
+  "ralph ..."            → implementation loop
+  "ralplan ..."          → consensus planning
 `)
 }
 
@@ -89,11 +93,22 @@ function main(): void {
   console.log(`xloop ${command}: ${cmd.description}`)
   console.log(`Usage: ${cmd.usage}`)
 
+  if (command === 'excalibur') {
+    const mode = commandArgs[0] === 'grab' ? 'grab' : 'autohunt'
+    const description = commandArgs.slice(mode === commandArgs[0] ? 1 : 0).join(' ')
+    console.log(`\nMode: ${mode}`)
+    console.log(`Description: ${description || '(none)'}`)
+    console.log(`\nTo run in Claude Code, use: "excalibur ${mode} ${description}"`)
+    console.log('The keyword detector hook will invoke the appropriate skill.')
+    return
+  }
+
   if (commandArgs.length > 0) {
     console.log(`Args: ${commandArgs.join(' ')}`)
   }
 
-  console.log(`\n[Skill invocation would happen here — skills/${command}/SKILL.md]`)
+  console.log(`\nTo run in Claude Code, say: "${command} ${commandArgs.join(' ')}"`)
+  console.log(`The keyword detector hook will invoke skills/${command}/SKILL.md`)
 }
 
 main()
