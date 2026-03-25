@@ -5,4 +5,5 @@ dist/
 .xloop/reports/
 .xloop/research/cache/
 *.tsbuildinfo
-assets/
+assets/*
+!assets/banner.png
