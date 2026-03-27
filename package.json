@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "bundle:mcp": "esbuild src/mcp-server.ts --bundle --platform=node --target=node18 --format=cjs --outfile=bridge/mcp-server.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
