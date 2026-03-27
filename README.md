@@ -89,12 +89,17 @@ Task Entry → Complexity Gate (hook-level, structural)
 
 ## Installation
 
+In Claude Code, run the following commands:
+
 ```bash
-npm install -g xloop
-xloop setup
+# 1. Add the xLoop marketplace
+/plugin marketplace add HSUNEH/xLoop
+
+# 2. Install the plugin
+/plugin install xloop@xloop
 ```
 
-What `xloop setup` does:
+What the setup does:
 1. Installs CLAUDE.md (agent instructions)
 2. Configures test mode (B: semi-auto / C: full-auto)
 3. Registers MCP server (state, notepad, PRD tools)

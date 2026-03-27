@@ -89,12 +89,17 @@ Big Loop × N 마일스톤:
 
 ## 설치
 
+Claude Code에서 아래 명령어를 실행하세요:
+
 ```bash
-npm install -g xloop
-xloop setup
+# 1. xLoop 마켓플레이스 추가
+/plugin marketplace add HSUNEH/xLoop
+
+# 2. 플러그인 설치
+/plugin install xloop@xloop
 ```
 
-`xloop setup`이 수행하는 작업:
+설치 시 수행되는 작업:
 1. CLAUDE.md 설치 (에이전트 지시사항)
 2. 테스트 모드 설정 (B: 반자동 / C: 완전 자동)
 3. MCP 서버 등록 (state, notepad, PRD 도구)
