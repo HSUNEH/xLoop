@@ -34,7 +34,7 @@ Claude Code에서 실행:
 /plugin install xloop@xloop
 ```
 
-플러그인에는 **HUD (상태 표시줄)**가 포함되어 있습니다: 폴더, git 브랜치, 컨텍스트 사용량, 도구/에이전트/스킬 호출 수, 활성 플랜명, 5시간 rate limit을 표시합니다.
+플러그인에는 선택적 **HUD (상태 표시줄)**가 포함되어 있습니다: 폴더, git 브랜치, 컨텍스트 사용량, 도구/에이전트/스킬 호출 수, 활성 플랜명, 5시간 rate limit을 표시합니다. HUD는 StatusLine 훅을 지원하는 환경(예: [oh-my-claudecode](https://github.com/anthropics/oh-my-claudecode))이 필요합니다. `hooks/scripts/xloop-hud.mjs` 참조.
 
 ### 2. 사용
 

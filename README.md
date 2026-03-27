@@ -34,7 +34,7 @@ In Claude Code, run:
 /plugin install xloop@xloop
 ```
 
-The plugin includes a **HUD (status line)** that shows: folder, git branch, context usage, tool/agent/skill call counts, active plan name, and 5h rate limit.
+The plugin includes an optional **HUD (status line)** showing folder, git branch, context usage, tool/agent/skill counts, active plan, and 5h rate limit. The HUD requires a StatusLine hook (e.g., [oh-my-claudecode](https://github.com/anthropics/oh-my-claudecode)). See `hooks/scripts/xloop-hud.mjs`.
 
 ### 2. Use
 

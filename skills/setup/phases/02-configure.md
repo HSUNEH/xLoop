@@ -10,7 +10,7 @@ Verify xLoop plugin is properly installed before proceeding:
   - Version: {current version}
   - Skills: {count} loaded
   - Hooks: {count} registered
-  - HUD: active
+  - HUD: available (requires StatusLine hook, e.g. OMC)
 ```
 
 If not installed: "Run `/plugin marketplace add HSUNEH/xLoop` then `/plugin install xloop@xloop`"
@@ -27,12 +27,16 @@ Save to `~/.claude/.xloop-config.json` → `{ "testMode": "B" | "C" }`
 
 ## Step 2.3: MCP Server
 
-Register xLoop MCP server (required).
-`$CLAUDE_PLUGIN_ROOT` is automatically resolved by Claude Code to the plugin's install path.
+MCP server is **auto-registered** by the `Setup` hook on plugin install.
+Verify it's registered:
+```bash
+claude mcp list | grep xloop
+```
+
+If missing, register manually:
 ```bash
 claude mcp add xloop -- node "$CLAUDE_PLUGIN_ROOT/src/mcp-server.ts"
 ```
-Note: Claude Code runs TypeScript directly via its Node.js runtime. No build step required.
 
 Provides tools: xloop_state_read/write/clear/list, xloop_notepad_read/write, xloop_prd_generate
 
