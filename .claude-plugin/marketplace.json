@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "xloop",
+  "description": "Research-integrated agent harness with self-improvement — full project orchestration via Excalibur",
+  "owner": {
+    "name": "HSUNEH"
+  },
+  "plugins": [
+    {
+      "name": "xloop",
+      "description": "Agent harness that orchestrates planning, research, implementation, and self-improvement. 7 agents, 8 skills, Complexity Gate routing, milestone-scoped execution.",
+      "version": "0.2.0",
+      "author": {
+        "name": "HSUNEH"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/HSUNEH/xLoop",
+      "license": "MIT",
+      "tags": [
+        "agent-harness",
+        "orchestration",
+        "research",
+        "self-improvement",
+        "excalibur"
+      ]
+    }
+  ],
+  "version": "0.2.0"
+}
