@@ -52,14 +52,25 @@ Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 
 ## 키워드
 
+### 코어 — Excalibur 오케스트레이션
+
 | 키워드 | 기능 |
 |--------|------|
 | `excalibur "..."` | 전체 프로젝트 오케스트레이션 (오피스아워 → 인터뷰 → 기획 → 구현 → 검증) |
 | `ralph "..."` | PRD 기반 구현 루프 (TDD, 코드 리뷰, 보안 감사) |
 | `ralplan "..."` | 6-에이전트 합의 기획 (디자인 리뷰, 크로스모델 리뷰, 아이디어 발굴) |
+| `deep-interview "..."` | 소크라틱 스펙 공동 작성 (excalibur 내부 또는 단독 사용) |
 | `research "..."` | 다중 소스 조사 (웹, arxiv, 문서, NotebookLM) |
-| `upgrade` | 자기개선 사이클 |
+| `upgrade` | 자기개선 사이클 (체크섬 → 스냅샷 → 구현 → 리뷰 → 커밋) |
 | `rollback` | 스냅샷 복원 |
+
+### 유틸리티 — 독립 도구
+
+| 키워드 | 기능 |
+|--------|------|
+| `opportunity-scout "..."` | 트렌드 기반 기회 탐색 (Google Trends + GitHub + YouTube + 마케팅 프레임워크) |
+| `youtube-transcript <URL>` | YouTube 영상 자막 추출 (다국어, 수동+자동생성 2-pass) |
+| `setup` | 설치 마법사 (CLAUDE.md, MCP 서버, 설정) |
 
 ---
 
@@ -117,7 +128,7 @@ upgrade:
 
 ## 에이전트 & 스킬
 
-### 에이전트 (7개)
+### 에이전트 (8개)
 
 | 에이전트 | 모델 | 역할 |
 |---------|------|------|
@@ -127,20 +138,30 @@ upgrade:
 | researcher | Sonnet | 다중 소스 조사 |
 | executor | Sonnet | 코드 구현 |
 | verifier | Sonnet | 인수 기준 검증 |
+| designer | Sonnet | UX/UI 디자인 리뷰, 컴포넌트 설계 |
 | explorer | Haiku | 코드베이스 검색, 빠른 조회 |
 
-### 스킬 (8개)
+### 스킬 (10개)
+
+#### 코어 — Excalibur 파이프라인
 
 | 스킬 | 트리거 | 용도 |
 |------|--------|------|
-| excalibur | `"excalibur"` | 전체 프로젝트 오케스트레이션 |
-| deep-interview | (excalibur 경유) | 프로젝트 스펙 공동 작성 |
-| ralph | `"ralph"` | PRD 기반 구현 루프 |
-| ralplan | `"ralplan"` | 6-에이전트 합의 기획 |
-| research | `"research"` | 다중 소스 조사 |
-| setup | `"setup"` | 설치 마법사 |
-| upgrade | `"upgrade"` | 자기개선 사이클 |
+| excalibur | `"excalibur"` | 전체 프로젝트 오케스트레이션 (Interview → Ralplan → Ralph → Eval per milestone) |
+| deep-interview | `"deep-interview"` | 소크라틱 스펙 공동 작성, 모호성 게이팅 |
+| ralph | `"ralph"` | PRD 기반 구현 루프 (TDD, 코드 리뷰, 보안 감사) |
+| ralplan | `"ralplan"` | 6-에이전트 합의 기획 (Planner → Researcher → Architect → Designer → Critic) |
+| research | `"research"` | 다중 소스 조사 (웹, arxiv, 문서, NotebookLM) |
+| upgrade | `"upgrade"` | 자기개선 사이클 (체크섬 → 스냅샷 → 구현 → 리뷰 게이트 → 커밋) |
 | rollback | `"rollback"` | 스냅샷 복원 |
+
+#### 유틸리티 — 독립 도구
+
+| 스킬 | 트리거 | 용도 |
+|------|--------|------|
+| opportunity-scout | `"opportunity-scout"` | 트렌드 기반 기회 탐색 + 마케팅 프레임워크 분석 |
+| youtube-transcript | `"youtube-transcript"` | YouTube 자막 추출 (ko/en/ja, 수동+자동생성) |
+| setup | `"setup"` | 설치 마법사 (CLAUDE.md, MCP 서버, 설정) |
 
 ## 영감 & 크레딧
 

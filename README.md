@@ -52,14 +52,25 @@ Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 
 ## Keywords
 
+### Core — Excalibur Orchestration
+
 | Keyword | What it does |
 |---------|-------------|
 | `excalibur "..."` | Full project orchestration (office hours → interview → plan → implement → verify) |
 | `ralph "..."` | PRD-driven implementation loop (TDD, code review, security audit) |
 | `ralplan "..."` | 6-agent consensus planning (design review, cross-model review, idea discovery) |
+| `deep-interview "..."` | Socratic spec co-creation (used within excalibur or standalone) |
 | `research "..."` | Multi-source investigation (web, arxiv, docs, NotebookLM) |
-| `upgrade` | Self-improvement cycle |
+| `upgrade` | Self-improvement cycle (checksum → snapshot → implement → review → commit) |
 | `rollback` | Restore from snapshot |
+
+### Utilities — Standalone Tools
+
+| Keyword | What it does |
+|---------|-------------|
+| `opportunity-scout "..."` | Trend-driven idea discovery (Google Trends + GitHub + YouTube + marketing frameworks) |
+| `youtube-transcript <URL>` | Extract subtitles from YouTube videos (multi-language, 2-pass download) |
+| `setup` | Installation wizard (CLAUDE.md, MCP server, config) |
 
 ---
 
@@ -117,7 +128,7 @@ upgrade:
 
 ## Agents & Skills
 
-### Agents (7)
+### Agents (8)
 
 | Agent | Model | Role |
 |-------|-------|------|
@@ -127,20 +138,30 @@ upgrade:
 | researcher | Sonnet | Multi-source investigation |
 | executor | Sonnet | Code implementation |
 | verifier | Sonnet | Acceptance criteria verification |
+| designer | Sonnet | UX/UI design review, component design |
 | explorer | Haiku | Codebase search, quick lookups |
 
-### Skills (8)
+### Skills (10)
+
+#### Core — Excalibur Pipeline
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| excalibur | `"excalibur"` | Full project orchestration |
-| deep-interview | (via excalibur) | Project spec co-creation |
-| ralph | `"ralph"` | PRD-driven implementation loop |
-| ralplan | `"ralplan"` | 6-agent consensus planning |
-| research | `"research"` | Multi-source investigation |
-| setup | `"setup"` | Installation wizard |
-| upgrade | `"upgrade"` | Self-improvement cycle |
+| excalibur | `"excalibur"` | Full project orchestration (Interview → Ralplan → Ralph → Eval per milestone) |
+| deep-interview | `"deep-interview"` | Socratic spec co-creation with ambiguity gating |
+| ralph | `"ralph"` | PRD-driven implementation loop (TDD, code review, security audit) |
+| ralplan | `"ralplan"` | 6-agent consensus planning (Planner → Researcher → Architect → Designer → Critic) |
+| research | `"research"` | Multi-source investigation (web, arxiv, docs, NotebookLM) |
+| upgrade | `"upgrade"` | Self-improvement cycle (checksum → snapshot → implement → review gate → commit) |
 | rollback | `"rollback"` | Snapshot restore |
+
+#### Utilities — Standalone Tools
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| opportunity-scout | `"opportunity-scout"` | Trend-driven idea discovery with marketing framework analysis |
+| youtube-transcript | `"youtube-transcript"` | YouTube subtitle extraction (ko/en/ja, manual + auto-generated) |
+| setup | `"setup"` | Installation wizard (CLAUDE.md, MCP server, config) |
 
 ## Inspirations & Credits
 
