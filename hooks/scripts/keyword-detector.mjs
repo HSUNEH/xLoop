@@ -10,7 +10,9 @@ const KEYWORDS = {
   research: 'xloop:research',
   upgrade: 'xloop:upgrade',
   'opportunity-scout': 'xloop:opportunity-scout',
-  'opportunity scout': 'xloop:opportunity-scout'
+  'opportunity scout': 'xloop:opportunity-scout',
+  'youtube-transcript': 'xloop:youtube-transcript',
+  'youtube transcript': 'xloop:youtube-transcript'
 }
 
 const detected = Object.entries(KEYWORDS)
