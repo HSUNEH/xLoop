@@ -36,13 +36,15 @@ Before diving into spec creation, reframe the project at a product level.
 **Rules**:
 - Push back on framing — don't just accept feature requests
 - If the user's idea can be solved simpler, say so
-- Output: refined problem statement + success criteria
+- Output: refined problem statement + success criteria → saved to `.xloop/specs/office-hours.md`
 - User says "enough reframing" or answers feel solid → proceed to Deep Interview
 - User says "skip" → go directly to Deep Interview
 </Phase_0a_Office_Hours>
 
 <Phase_0b_Deep_Interview>
-Invokes the `deep-interview` skill to co-create a project spec with the user, informed by the reframed problem statement from Office Hours.
+Invokes the `deep-interview` skill with the Office Hours output as context.
+
+**Handoff**: Pass `.xloop/specs/office-hours.md` to deep-interview. Deep Interview skips overlapping Vision questions (already answered) and starts from Technical Direction.
 
 **Rules**:
 - One question at a time — never batch questions

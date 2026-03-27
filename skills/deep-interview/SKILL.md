@@ -57,9 +57,17 @@ Co-create a comprehensive project specification through guided conversation with
 - How many milestones to split into?
 </Question_Categories>
 
+<Context_Input>
+When invoked from excalibur with Office Hours output:
+- Read `.xloop/specs/office-hours.md` if it exists
+- If present: skip Vision category (already covered), start from Technical Direction
+- Incorporate the refined problem statement and success criteria into project-spec.json
+- If absent: run full interview starting from Vision
+</Context_Input>
+
 <Flow>
 1. Greet user, explain the interview process briefly
-2. Start with Vision category
+2. Check for Office Hours context → if exists, start from Technical Direction; otherwise Vision
 3. After each answer, decide:
    - Follow up on this topic? → ask deeper
    - Move to next category? → transition naturally
