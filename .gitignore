@@ -7,3 +7,5 @@ dist/
 *.tsbuildinfo
 assets/*
 !assets/banner.png
+__pycache__/
+.omc/
