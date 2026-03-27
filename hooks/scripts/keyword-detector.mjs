@@ -8,7 +8,9 @@ const KEYWORDS = {
   ralph: 'xloop:ralph',
   ralplan: 'xloop:ralplan',
   research: 'xloop:research',
-  upgrade: 'xloop:upgrade'
+  upgrade: 'xloop:upgrade',
+  'opportunity-scout': 'xloop:opportunity-scout',
+  'opportunity scout': 'xloop:opportunity-scout'
 }
 
 const detected = Object.entries(KEYWORDS)
