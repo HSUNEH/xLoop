@@ -6,8 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/typescript-5.7+-blue?logo=typescript&logoColor=white" alt="TypeScript 5.7+">
-  <img src="https://img.shields.io/badge/claude_code-harness-blueviolet" alt="Claude Code">
+  <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
   <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="v0.2.0">
 </p>
@@ -22,125 +21,63 @@
 
 ---
 
-xLoop은 기획, 리서치, 구현, 자기개선을 하나의 명령으로 오케스트레이션하는 **에이전트 하네스**입니다.
+xLoop은 기획, 리서치, 구현, 자기개선을 하나의 키워드로 오케스트레이션하는 **Claude Code 플러그인**입니다.
 
-## Excalibur — xLoop의 핵심
+## 빠른 시작
+
+### 1. 설치
+
+Claude Code에서 실행:
+
+```
+/plugin marketplace add HSUNEH/xLoop
+/plugin install xloop@xloop
+```
+
+### 2. 사용
+
+Claude Code에서 키워드를 자연스럽게 입력하세요:
 
 ```
 excalibur "실시간 채팅 앱 만들기"
 ```
 
-하나의 명령으로 프로젝트 전체를 오케스트레이션합니다:
+끝입니다. xLoop이 나머지를 처리합니다:
 
 ```
-Phase 0: Deep Interview (사용자와 함께 스펙 공동 작성, 한 번에 하나의 질문)
-    │
-    ▼
-Big Loop × N 마일스톤:
-    ├── Ralplan (4-에이전트 합의 + 통합 리서치 — 현재 마일스톤만)
-    ├── Ralph  (PRD 기반 구현 루프 — 병렬 실행)
-    └── Eval   (자동 검증 + 학습 → 다음 마일스톤)
+Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 ```
 
-### 핵심 메커니즘
+## 키워드
 
-- **Complexity Gate**: 2단계 양방향 라우팅 — 단순 작업은 오케스트레이션을 건너뜀
-- **리서치 통합 기획**: 리서치가 기획 루프 안에서 수행됨 (별도 사전 단계 아님)
-- **마일스톤 단위 실행**: 각 루프가 전체 프로젝트가 아닌 하나의 마일스톤만 기획하고 구현
-- **자동 검증**: 매 구현 사이클 후 5개 메트릭 검사
-- **Mode B/C**: 반자동(사용자 승인) 또는 완전 자동(임계값 기반) 업그레이드 결정
-- **자기개선**: 체크섬 보호, 스냅샷 기반 업그레이드 사이클 (롤백 지원)
-- **학습**: 각 마일스톤의 교훈이 다음 루프 기획에 반영
+| 키워드 | 기능 |
+|--------|------|
+| `excalibur "..."` | 전체 프로젝트 오케스트레이션 (인터뷰 → 기획 → 구현 → 검증) |
+| `ralph "..."` | PRD 기반 구현 루프 |
+| `ralplan "..."` | 4-에이전트 합의 기획 + 통합 리서치 |
+| `research "..."` | 다중 소스 조사 (웹, arxiv, 문서) |
+| `upgrade` | 자기개선 사이클 |
+| `rollback` | 스냅샷 복원 |
 
-## 아키텍처
+---
 
-```
-작업 진입 → Complexity Gate (hook 수준, 구조적)
-    │
-    ├── 점수 1 (단순)  → Executor 직접 실행 — 오버헤드 없음
-    ├── 점수 2 (중간)  → Ralph만 — 기획 건너뜀
-    └── 점수 3 (복잡)  → Ralplan + Ralph — 전체 프로세스
-```
+## 동작 원리
 
-### 에이전트 (7개)
+### Complexity Gate
 
-| 에이전트 | 모델 | 역할 |
-|---------|------|------|
-| planner | Opus | 전략 기획, 리서치 필요사항 식별 |
-| architect | Opus | 아키텍처 리뷰, 반론 검토 |
-| critic | Opus | 품질 게이트, 원칙-옵션 일관성 |
-| researcher | Sonnet | 다중 소스 조사 (웹, arxiv, 문서) |
-| executor | Sonnet | 코드 구현 |
-| verifier | Sonnet | 인수 기준 검증 |
-| explorer | Haiku | 코드베이스 검색, 빠른 조회 |
+모든 작업은 오케스트레이션 전에 자동으로 라우팅됩니다:
 
-### 스킬 (8개)
-
-| 스킬 | 트리거 | 용도 |
+| 점수 | 라우트 | 예시 |
 |------|--------|------|
-| excalibur | `"excalibur"` | 전체 프로젝트 오케스트레이션 |
-| deep-interview | (excalibur 경유) | 프로젝트 스펙 공동 작성 |
-| ralph | `"ralph"` | PRD 기반 구현 루프 |
-| ralplan | `"ralplan"` | 4-에이전트 합의 기획 + 통합 리서치 |
-| research | `"research"` | 다중 소스 조사 |
-| setup | `"setup"` | 설치 마법사 |
-| upgrade | `"upgrade"` | 자기개선 사이클 |
-| rollback | `"rollback"` | 스냅샷 복원 |
-
-## 설치
-
-Claude Code에서 아래 명령어를 실행하세요:
-
-```bash
-# 1. xLoop 마켓플레이스 추가
-/plugin marketplace add HSUNEH/xLoop
-
-# 2. 플러그인 설치
-/plugin install xloop@xloop
-```
-
-설치 시 수행되는 작업:
-1. CLAUDE.md 설치 (에이전트 지시사항)
-2. 테스트 모드 설정 (B: 반자동 / C: 완전 자동)
-3. MCP 서버 등록 (state, notepad, PRD 도구)
-4. NotebookLM 인증 설정
-5. Complexity Gate 임계값 설정
-
-## 사용법
-
-### 전체 프로젝트 오케스트레이션
-
-```
-excalibur "실시간 채팅 앱"
-# → Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
-```
-
-### 키워드 (Claude Code에서 자연스럽게 사용)
-
-```
-"excalibur 채팅 앱 만들기"     → 전체 프로젝트 오케스트레이션
-"ralph 이 버그 수정"           → PRD 기반 구현 루프
-"ralplan 새 기능 설계"         → 4-에이전트 합의 기획
-"research WebSocket vs SSE"    → 단독 리서치
-"upgrade"                      → 자기개선 사이클
-"rollback"                     → 스냅샷 복원
-```
-
-## Complexity Gate
-
-모든 작업은 오케스트레이션 전에 구조적으로 라우팅됩니다:
-
-| 점수 | 라우트 | 조건 |
-|------|--------|------|
-| 1 (단순) | Executor 직접 | "오타 수정", "이름 변경", 단일 파일 |
+| 1 (단순) | Executor 직접 | "오타 수정", "이름 변경" |
 | 2 (중간) | Ralph만 | 다중 파일 작업, 명확한 범위 |
 | 3 (복잡) | Ralplan + Ralph | 아키텍처 결정, 모호한 범위 |
 
-**2단계 게이트**: 구조적 휴리스틱(즉시, LLM 비용 0) → Haiku 마이크로 평가(불확실할 때만).
+2단계 게이트: 구조적 휴리스틱(즉시, LLM 비용 0) → Haiku 마이크로 평가(불확실할 때만).
 
 3차원 점수: 범위(40%) + 명확성(35%) + 결정(25%).
 
-## Excalibur Big Loop
+### Excalibur Big Loop
 
 ```
 Big Loop #1 (M1: MVP)
@@ -157,20 +94,11 @@ Big Loop #2 (M2 + M3 독립적이면 병렬)
   └── Eval: 둘 다 완료 → 프로젝트 완료
 ```
 
-### 마일스톤 병렬화
+독립적인 마일스톤은 병렬 레인으로 실행됩니다. 충돌 감지 시 순차 실행으로 전환됩니다.
 
-독립적인 마일스톤(`depends_on` 충돌 없음)은 병렬 레인으로 실행됩니다. 충돌 감지 시 순차 실행으로 전환됩니다.
+각 루프는 `.xloop/learnings/loop-{N}.json`(기술, 프로세스, 품질 교훈)을 생성하여 다음 루프에 반영합니다.
 
-### 학습
-
-각 루프는 `.xloop/learnings/loop-{N}.json`을 생성합니다:
-- 기술 교훈 (어떤 라이브러리/패턴이 효과적이었는지)
-- 프로세스 교훈 (스토리 순서, 병렬화)
-- 품질 교훈 (놓친 메트릭)
-
-다음 Ralplan은 이전 학습을 컨텍스트로 받습니다.
-
-## 자기개선
+### 자기개선
 
 ```
 Ralph 완료 → 자동 검증 (5개 메트릭) → 임계값 확인
@@ -183,50 +111,34 @@ upgrade:
   체크섬 검증 → 스냅샷 → Ralplan → Ralph → 리뷰 게이트 → 커밋
 ```
 
-**안전장치**: PRINCIPLES.md SHA-256 체크섬, git pre-commit hook, 스냅샷/롤백, 멀티 모델 리뷰 게이트. 업그레이드는 xLoop 파일만 수정 — 호스트 프로젝트 코드는 절대 변경하지 않음.
+**안전장치**: SHA-256 체크섬, git pre-commit hook, 스냅샷/롤백, 멀티 모델 리뷰 게이트. 업그레이드는 xLoop 파일만 수정 — 프로젝트 코드는 절대 변경하지 않음.
 
-## 프로젝트 구조
+## 에이전트 & 스킬
 
-```
-xloop/
-├── agents/                  ← 7개 에이전트 정의 (md)
-│   ├── planner.md          (Opus)
-│   ├── architect.md        (Opus)
-│   ├── critic.md           (Opus)
-│   ├── researcher.md       (Sonnet)
-│   ├── executor.md         (Sonnet)
-│   ├── verifier.md         (Sonnet)
-│   └── explorer.md         (Haiku)
-├── skills/                  ← 8개 스킬 정의
-│   ├── excalibur/SKILL.md  ← xLoop의 핵심
-│   ├── deep-interview/SKILL.md
-│   ├── ralph/SKILL.md
-│   ├── ralplan/SKILL.md
-│   ├── research/SKILL.md
-│   ├── setup/SKILL.md + phases/
-│   ├── upgrade/SKILL.md
-│   └── rollback/SKILL.md
-├── hooks/                   ← 8개 라이프사이클 Hook
-│   ├── hooks.json
-│   └── scripts/*.mjs
-├── src/                     ← 핵심 TypeScript 모듈
-│   ├── cli.ts              ← CLI 진입점
-│   ├── mcp-server.ts       ← MCP 도구 서버 (7개 도구)
-│   ├── state.ts            ← 세션 상태 관리
-│   ├── gate.ts             ← Complexity Gate
-│   ├── prd.ts              ← PRD 스캐폴드 생성기
-│   ├── router.ts           ← PAL 모델 계층 라우팅
-│   ├── checksum.ts         ← PRINCIPLES.md 무결성
-│   ├── snapshot.ts         ← 업그레이드 전 스냅샷 + 롤백
-│   ├── excalibur/          ← Excalibur 오케스트레이션 모듈
-│   ├── interview.ts        ← Deep Interview 로직
-│   ├── milestone.ts        ← 마일스톤 진행률 추적
-│   └── llm-bridge.ts       ← LLM API 추상화
-├── templates/CLAUDE.md      ← 프로젝트 템플릿
-├── tests/                   ← 10개 파일 94개 테스트
-├── package.json
-└── tsconfig.json
-```
+### 에이전트 (7개)
+
+| 에이전트 | 모델 | 역할 |
+|---------|------|------|
+| planner | Opus | 전략 기획, 리서치 필요사항 식별 |
+| architect | Opus | 아키텍처 리뷰, 반론 검토 |
+| critic | Opus | 품질 게이트, 원칙-옵션 일관성 |
+| researcher | Sonnet | 다중 소스 조사 |
+| executor | Sonnet | 코드 구현 |
+| verifier | Sonnet | 인수 기준 검증 |
+| explorer | Haiku | 코드베이스 검색, 빠른 조회 |
+
+### 스킬 (8개)
+
+| 스킬 | 트리거 | 용도 |
+|------|--------|------|
+| excalibur | `"excalibur"` | 전체 프로젝트 오케스트레이션 |
+| deep-interview | (excalibur 경유) | 프로젝트 스펙 공동 작성 |
+| ralph | `"ralph"` | PRD 기반 구현 루프 |
+| ralplan | `"ralplan"` | 4-에이전트 합의 기획 |
+| research | `"research"` | 다중 소스 조사 |
+| setup | `"setup"` | 설치 마법사 |
+| upgrade | `"upgrade"` | 자기개선 사이클 |
+| rollback | `"rollback"` | 스냅샷 복원 |
 
 ## 설계 결정
 
@@ -240,10 +152,10 @@ xLoop은 세 시스템의 장점을 결합합니다:
 
 ### 핵심 차별점
 
-- **Complexity Gate**: 양방향 라우팅 — OMC와 Ouroboros는 위로만 확장, xLoop은 아래로도 축소
+- **Complexity Gate**: 양방향 라우팅 — 단순 작업은 아래로 축소, 복잡한 작업만 위로 확장
 - **리서치 통합 기획**: 별도 사전 단계가 아닌 기획 루프 안에서 리서치 수행
 - **마일스톤 단위 실행**: 전체 프로젝트가 아닌 한 번에 하나의 청크만 기획
-- **Excalibur**: 단일 명령으로 전체 프로젝트 라이프사이클 관리
+- **Excalibur**: 단일 키워드로 전체 프로젝트 라이프사이클 관리
 
 ## 개발
 

@@ -6,8 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/typescript-5.7+-blue?logo=typescript&logoColor=white" alt="TypeScript 5.7+">
-  <img src="https://img.shields.io/badge/claude_code-harness-blueviolet" alt="Claude Code">
+  <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
   <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="v0.2.0">
 </p>
@@ -22,125 +21,63 @@
 
 ---
 
-xLoop is an **agent harness** that orchestrates planning, research, implementation, and self-improvement — all through a single command.
+xLoop is a **Claude Code plugin** that orchestrates planning, research, implementation, and self-improvement — all through a single keyword.
 
-## Excalibur — The Essence of xLoop
+## Quick Start
+
+### 1. Install
+
+In Claude Code, run:
+
+```
+/plugin marketplace add HSUNEH/xLoop
+/plugin install xloop@xloop
+```
+
+### 2. Use
+
+Just type a keyword naturally in Claude Code:
 
 ```
 excalibur "build a real-time chat app"
 ```
 
-One command to orchestrate an entire project:
+That's it. xLoop handles the rest:
 
 ```
-Phase 0: Deep Interview (co-create spec with user, one question at a time)
-    │
-    ▼
-Big Loop × N milestones:
-    ├── Ralplan (4-agent consensus + integrated research — THIS milestone only)
-    ├── Ralph  (PRD-driven implementation loop — parallel execution)
-    └── Eval   (auto-verification + learnings → next milestone)
+Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 ```
 
-### Key Mechanisms
+## Keywords
 
-- **Complexity Gate**: 2-step bidirectional routing — simple tasks skip orchestration entirely
-- **Research-Integrated Planning**: Research happens WITHIN the planning loop, not before it
-- **Milestone-Scoped Execution**: Each loop plans and implements one milestone, not the whole project
-- **Auto-Verification**: 5 metrics checked after every implementation cycle
-- **Mode B/C**: Semi-auto (user approves) or full-auto (threshold-based) upgrade decisions
-- **Self-Improvement**: Checksum-protected, snapshot-backed upgrade cycle with rollback
-- **Learnings**: Each milestone's lessons feed into the next loop's planning context
+| Keyword | What it does |
+|---------|-------------|
+| `excalibur "..."` | Full project orchestration (interview → plan → implement → verify) |
+| `ralph "..."` | PRD-driven implementation loop |
+| `ralplan "..."` | 4-agent consensus planning with integrated research |
+| `research "..."` | Multi-source investigation (web, arxiv, docs) |
+| `upgrade` | Self-improvement cycle |
+| `rollback` | Restore from snapshot |
 
-## Architecture
+---
 
-```
-Task Entry → Complexity Gate (hook-level, structural)
-    │
-    ├── score 1 (simple)  → Executor direct — zero overhead
-    ├── score 2 (medium)  → Ralph only — skip planning
-    └── score 3 (complex) → Ralplan + Ralph — full process
-```
+## How It Works
 
-### Agents (7)
+### Complexity Gate
 
-| Agent | Model | Role |
-|-------|-------|------|
-| planner | Opus | Strategic planning, research needs identification |
-| architect | Opus | Architecture review, steelman counterarguments |
-| critic | Opus | Quality gate, principle-option consistency |
-| researcher | Sonnet | Multi-source investigation (web, arxiv, docs) |
-| executor | Sonnet | Code implementation |
-| verifier | Sonnet | Acceptance criteria verification |
-| explorer | Haiku | Codebase search, quick lookups |
+Every task is automatically routed before orchestration:
 
-### Skills (8)
+| Score | Route | Example |
+|-------|-------|---------|
+| 1 (simple) | Executor direct | "fix typo", "rename X" |
+| 2 (medium) | Ralph only | multi-file task, clear scope |
+| 3 (complex) | Ralplan + Ralph | architecture decisions, vague scope |
 
-| Skill | Trigger | Purpose |
-|-------|---------|---------|
-| excalibur | `"excalibur"` | Full project orchestration |
-| deep-interview | (via excalibur) | Project spec co-creation |
-| ralph | `"ralph"` | PRD-driven implementation loop |
-| ralplan | `"ralplan"` | 4-agent consensus planning with integrated research |
-| research | `"research"` | Multi-source investigation |
-| setup | `"setup"` | Installation wizard |
-| upgrade | `"upgrade"` | Self-improvement cycle |
-| rollback | `"rollback"` | Snapshot restore |
-
-## Installation
-
-In Claude Code, run the following commands:
-
-```bash
-# 1. Add the xLoop marketplace
-/plugin marketplace add HSUNEH/xLoop
-
-# 2. Install the plugin
-/plugin install xloop@xloop
-```
-
-What the setup does:
-1. Installs CLAUDE.md (agent instructions)
-2. Configures test mode (B: semi-auto / C: full-auto)
-3. Registers MCP server (state, notepad, PRD tools)
-4. Sets up NotebookLM authentication
-5. Configures Complexity Gate thresholds
-
-## Usage
-
-### Full Project Orchestration
-
-```
-excalibur "real-time chat app"
-# → Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
-```
-
-### Keywords (use naturally in Claude Code)
-
-```
-"excalibur build a chat app"   → full project orchestration
-"ralph fix this bug"           → PRD-driven implementation loop
-"ralplan design new feature"   → 4-agent consensus planning
-"research WebSocket vs SSE"    → standalone research
-"upgrade"                      → self-improvement cycle
-"rollback"                     → restore from snapshot
-```
-
-## Complexity Gate
-
-Every task is structurally routed before any orchestration:
-
-| Score | Route | When |
-|-------|-------|------|
-| 1 (simple) | Executor direct | "fix typo", "rename X", single file path |
-| 2 (medium) | Ralph only | Multi-file task, clear scope |
-| 3 (complex) | Ralplan + Ralph | Architecture decisions, vague scope |
-
-**2-step gate**: Structural heuristic (instant, 0 LLM cost) → Haiku micro-assessment (only when uncertain).
+2-step gate: Structural heuristic (instant, 0 LLM cost) → Haiku micro-assessment (only when uncertain).
 
 3-dimension scoring: Scope (40%) + Clarity (35%) + Decision (25%).
 
-## Excalibur Big Loop
+### Excalibur Big Loop
 
 ```
 Big Loop #1 (M1: MVP)
@@ -157,20 +94,11 @@ Big Loop #2 (M2 + M3 in parallel if independent)
   └── Eval: Both complete → project done
 ```
 
-### Milestone Parallelization
+Independent milestones run in parallel lanes. Conflict detected → sequential fallback.
 
-Independent milestones (no `depends_on` conflicts) run in parallel lanes. Conflict detected → sequential fallback.
+Each loop generates `.xloop/learnings/loop-{N}.json` (technical, process, quality lessons) that feed into the next loop.
 
-### Learnings
-
-Each loop generates `.xloop/learnings/loop-{N}.json`:
-- Technical lessons (which libraries/patterns worked)
-- Process lessons (story ordering, parallelization)
-- Quality lessons (missed metrics)
-
-Next Ralplan receives previous learnings as context.
-
-## Self-Improvement
+### Self-Improvement
 
 ```
 Ralph complete → Auto-verification (5 metrics) → Threshold check
@@ -183,50 +111,34 @@ upgrade:
   Checksum verify → Snapshot → Ralplan → Ralph → Review gate → Commit
 ```
 
-**Safety**: PRINCIPLES.md SHA-256 checksum, git pre-commit hook, snapshot/rollback, multi-model review gate. Upgrades modify only xLoop files — never host project code.
+**Safety**: SHA-256 checksum, git pre-commit hook, snapshot/rollback, multi-model review gate. Upgrades modify only xLoop files — never your project code.
 
-## Project Structure
+## Agents & Skills
 
-```
-xloop/
-├── agents/                  ← 7 agent definitions (md)
-│   ├── planner.md          (Opus)
-│   ├── architect.md        (Opus)
-│   ├── critic.md           (Opus)
-│   ├── researcher.md       (Sonnet)
-│   ├── executor.md         (Sonnet)
-│   ├── verifier.md         (Sonnet)
-│   └── explorer.md         (Haiku)
-├── skills/                  ← 8 skill definitions
-│   ├── excalibur/SKILL.md  ← The essence of xLoop
-│   ├── deep-interview/SKILL.md
-│   ├── ralph/SKILL.md
-│   ├── ralplan/SKILL.md
-│   ├── research/SKILL.md
-│   ├── setup/SKILL.md + phases/
-│   ├── upgrade/SKILL.md
-│   └── rollback/SKILL.md
-├── hooks/                   ← 8 lifecycle hooks
-│   ├── hooks.json
-│   └── scripts/*.mjs
-├── src/                     ← Core TypeScript modules
-│   ├── cli.ts              ← CLI entry point
-│   ├── mcp-server.ts       ← MCP tool server (7 tools)
-│   ├── state.ts            ← Session state management
-│   ├── gate.ts             ← Complexity Gate
-│   ├── prd.ts              ← PRD scaffold generator
-│   ├── router.ts           ← PAL model tier routing
-│   ├── checksum.ts         ← PRINCIPLES.md integrity
-│   ├── snapshot.ts         ← Pre-upgrade snapshot + rollback
-│   ├── excalibur/          ← Excalibur orchestration modules
-│   ├── interview.ts        ← Deep Interview logic
-│   ├── milestone.ts        ← Milestone progress tracking
-│   └── llm-bridge.ts       ← LLM API abstraction
-├── templates/CLAUDE.md      ← Project template
-├── tests/                   ← 94 tests across 10 files
-├── package.json
-└── tsconfig.json
-```
+### Agents (7)
+
+| Agent | Model | Role |
+|-------|-------|------|
+| planner | Opus | Strategic planning, research needs identification |
+| architect | Opus | Architecture review, steelman counterarguments |
+| critic | Opus | Quality gate, principle-option consistency |
+| researcher | Sonnet | Multi-source investigation |
+| executor | Sonnet | Code implementation |
+| verifier | Sonnet | Acceptance criteria verification |
+| explorer | Haiku | Codebase search, quick lookups |
+
+### Skills (8)
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| excalibur | `"excalibur"` | Full project orchestration |
+| deep-interview | (via excalibur) | Project spec co-creation |
+| ralph | `"ralph"` | PRD-driven implementation loop |
+| ralplan | `"ralplan"` | 4-agent consensus planning |
+| research | `"research"` | Multi-source investigation |
+| setup | `"setup"` | Installation wizard |
+| upgrade | `"upgrade"` | Self-improvement cycle |
+| rollback | `"rollback"` | Snapshot restore |
 
 ## Design Decisions
 
@@ -240,10 +152,10 @@ xLoop combines the best of three systems:
 
 ### Key Differentiators
 
-- **Complexity Gate**: Bidirectional routing — OMC and Ouroboros only scale UP, xLoop also scales DOWN
+- **Complexity Gate**: Bidirectional routing — scales DOWN for simple tasks, not just up
 - **Research-Integrated Planning**: Research within the planning loop, not as a separate pre-step
 - **Milestone-Scoped Execution**: Plan one chunk at a time, not the whole project
-- **Excalibur**: Single command for entire project lifecycle
+- **Excalibur**: Single keyword for entire project lifecycle
 
 ## Development
 
