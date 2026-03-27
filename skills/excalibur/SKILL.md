@@ -80,11 +80,26 @@ Big Loop #N (Milestone M{N}):
   │   - Sprint Retro: what worked, what didn't, what to change
   │   - Generate learnings → .xloop/learnings/loop-{N}.json
   │
-  └── Checkpoint (mode-dependent):
-      Mode B: Full review — user chooses: proceed / modify spec / upgrade / stop
-      Mode C: 10-second checkpoint — input = modify, no input = auto-proceed
+  ├── Checkpoint (mode-dependent):
+  │   Mode B: Full review — user chooses: proceed / modify spec / upgrade / stop
+  │   Mode C: 10-second checkpoint — input = modify, no input = auto-proceed
+  │
+  └── Next iteration receives:
+      - project-spec.json (updated feature statuses from Eval)
+      - .xloop/learnings/loop-{N}.json (technical + process + quality)
+      - Sprint Retro findings (merged into learnings)
+      - Auto-verification metrics (for regression tracking)
 ```
 </Big_Loop>
+
+<Eval_Metrics>
+Auto-verification checks 5 metrics after each milestone:
+1. **Tests pass**: All existing + new tests green
+2. **Type safety**: Zero type errors (typecheck passes)
+3. **Lint clean**: Zero lint violations
+4. **Build succeeds**: Production build completes without errors
+5. **Acceptance criteria**: All prd.json stories have passes: true
+</Eval_Metrics>
 
 <Eval_Enhanced>
 <!-- Inspired by: gstack /browse, /qa, /retro (https://github.com/garrytan/gstack) -->

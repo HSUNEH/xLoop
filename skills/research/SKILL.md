@@ -37,7 +37,7 @@ Each source adapter wraps calls in try/catch:
 </Error_Boundaries>
 
 <Cache>
-- Per-source TTL: ArXiv 24h, web 1h, docs 1h
+- Per-source TTL: ArXiv 24h, web 1h, docs 1h, NotebookLM none (on-demand, no cache)
 - Cache key: `hash(query + source + project_root)` — prevents cross-project pollution
 - Stored in `.xloop/research/cache/`
 - Within ralplan: results shared across loop iterations
@@ -47,7 +47,7 @@ Each source adapter wraps calls in try/catch:
 ```json
 {
   "question": "the specific question asked",
-  "sources": [{"url": "...", "type": "web|arxiv|docs"}],
+  "sources": [{"url": "...", "type": "web|arxiv|docs|notebooklm"}],
   "findings": [{"text": "...", "confidence": "high|medium|low"}],
   "cached": false,
   "timestamp": "2026-03-24T..."

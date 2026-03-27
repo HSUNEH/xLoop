@@ -75,12 +75,14 @@ For multi-story execution, each story gets a fresh executor agent:
 2. **Pick next story**: Select highest-priority story with `passes: false`.
 
 3. **Implement**: Delegate to specialist agents at appropriate tiers.
+   - If `--tdd` flag is set, enforce TDD_Mode (Red-Green-Refactor) for this story.
+   - Use Fresh_Subagent isolation: each story gets a new executor with no prior conversation history.
    - If independent sub-tasks exist, fire them in parallel.
    - If sub-tasks are discovered during implementation, add as new stories to `prd.json`.
 
 4. **Verify**: For EACH acceptance criterion, verify with fresh evidence.
    - Run tests, builds, lint, typecheck and read the output.
-   - If any criterion NOT met, continue working — do NOT mark complete.
+   - If any criterion NOT met, apply Debug_Protocol (reproduce → isolate → root cause → fix), then re-verify.
 
 5. **Mark complete + save state**:
    a. Set `passes: true` for this story in `prd.json`.
@@ -128,6 +130,12 @@ Executor must verify each during ralph SKILL.md authoring:
 - [ ] Story-by-story execution (one at a time, in priority order)
 - [ ] Parallel execution policy (independent tasks simultaneously)
 - [ ] Background operation rules (builds/tests in background)
+- [ ] TDD mode enforced when --tdd flag set (Red-Green-Refactor per story)
+- [ ] Worktree isolation when running within excalibur
+- [ ] Fresh subagent per story (no context carryover)
+- [ ] Code Review completed before reviewer verification (Step 7 before Step 9)
+- [ ] Security Audit completed before reviewer verification (Step 8 before Step 9)
+- [ ] Debug Protocol followed on failure (reproduce → isolate → root cause → fix)
 - [ ] Tiered reviewer verification (scope-appropriate tier)
 - [ ] State persistence between stories (save after each completion)
 - [ ] Escalation conditions (blocker → report, same issue 3x → fundamental problem)
@@ -136,6 +144,6 @@ Executor must verify each during ralph SKILL.md authoring:
 
 <Escalation>
 - Fundamental blocker requiring user input → stop and report
-- Same issue 3+ iterations → report as potential fundamental problem
+- Same issue 3+ iterations → apply Debug_Protocol first; if still unresolved, report as potential fundamental problem
 - User says "stop" or "cancel" → clean exit
 </Escalation>
