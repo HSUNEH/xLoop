@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.3.0">
 </p>
 
 <p align="center">
@@ -54,10 +54,10 @@ Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 
 | 키워드 | 기능 |
 |--------|------|
-| `excalibur "..."` | 전체 프로젝트 오케스트레이션 (인터뷰 → 기획 → 구현 → 검증) |
-| `ralph "..."` | PRD 기반 구현 루프 |
-| `ralplan "..."` | 4-에이전트 합의 기획 + 통합 리서치 |
-| `research "..."` | 다중 소스 조사 (웹, arxiv, 문서) |
+| `excalibur "..."` | 전체 프로젝트 오케스트레이션 (오피스아워 → 인터뷰 → 기획 → 구현 → 검증) |
+| `ralph "..."` | PRD 기반 구현 루프 (TDD, 코드 리뷰, 보안 감사) |
+| `ralplan "..."` | 6-에이전트 합의 기획 (디자인 리뷰, 크로스모델 리뷰, 아이디어 발굴) |
+| `research "..."` | 다중 소스 조사 (웹, arxiv, 문서, NotebookLM) |
 | `upgrade` | 자기개선 사이클 |
 | `rollback` | 스냅샷 복원 |
 
@@ -136,7 +136,7 @@ upgrade:
 | excalibur | `"excalibur"` | 전체 프로젝트 오케스트레이션 |
 | deep-interview | (excalibur 경유) | 프로젝트 스펙 공동 작성 |
 | ralph | `"ralph"` | PRD 기반 구현 루프 |
-| ralplan | `"ralplan"` | 4-에이전트 합의 기획 |
+| ralplan | `"ralplan"` | 6-에이전트 합의 기획 |
 | research | `"research"` | 다중 소스 조사 |
 | setup | `"setup"` | 설치 마법사 |
 | upgrade | `"upgrade"` | 자기개선 사이클 |

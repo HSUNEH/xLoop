@@ -18,7 +18,7 @@ It MUST NOT modify host project source code.
 <Steps>
 1. **Checksum verify**: Compute SHA-256 of PRINCIPLES.md, compare to `.xloop-checksum`. Mismatch → ABORT.
 2. **Snapshot**: Save current xLoop files to `.xloop/snapshots/{semver}/` via `src/snapshot.ts`.
-3. **Ralplan**: 4-agent consensus to plan improvements (research integrated).
+3. **Ralplan**: 6-agent consensus to plan improvements (research integrated).
    - Input: auto-verification report from `.xloop/reports/`, previous learnings
    - Scope: xLoop internals only
 4. **Experiment loop** (autoresearch pattern):

@@ -1,6 +1,6 @@
 ---
 name: ralplan
-description: 4-agent consensus planning with integrated research — plans one milestone at a time
+description: 6-agent consensus planning with integrated research — plans one milestone at a time
 level: 4
 ---
 
@@ -99,10 +99,16 @@ When invoked within excalibur:
 - Plans ONLY this milestone's features (ignore future milestones)
 - Builds on already-implemented code from previous milestones
 - Does NOT plan the whole project at once
+- Idea Discovery (`--discover`): runs per-milestone, scoped to milestone features
+- Design Review: applies only when the milestone includes UI changes
+- Cross-Model Review (`--cross-review`): runs per-milestone if enabled
 </Milestone_Scoping>
 
 <Output>
 - Plan document (.md) saved to `.xloop/plans/{task}-{timestamp}.md`
 - RALPLAN-DR summary (Principles, Decision Drivers, Options)
 - ADR (Decision, Drivers, Alternatives considered, Why chosen, Consequences)
+- Idea Discovery report (when `--discover` used)
+- Design Review findings (when UI detected)
+- Cross-Model Review critique (when `--cross-review` used)
 </Output>

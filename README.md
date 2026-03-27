@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.3.0">
 </p>
 
 <p align="center">
@@ -54,10 +54,10 @@ Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 
 | Keyword | What it does |
 |---------|-------------|
-| `excalibur "..."` | Full project orchestration (interview → plan → implement → verify) |
-| `ralph "..."` | PRD-driven implementation loop |
-| `ralplan "..."` | 4-agent consensus planning with integrated research |
-| `research "..."` | Multi-source investigation (web, arxiv, docs) |
+| `excalibur "..."` | Full project orchestration (office hours → interview → plan → implement → verify) |
+| `ralph "..."` | PRD-driven implementation loop (TDD, code review, security audit) |
+| `ralplan "..."` | 6-agent consensus planning (design review, cross-model review, idea discovery) |
+| `research "..."` | Multi-source investigation (web, arxiv, docs, NotebookLM) |
 | `upgrade` | Self-improvement cycle |
 | `rollback` | Restore from snapshot |
 
@@ -83,9 +83,9 @@ Every task is automatically routed before orchestration:
 
 ```
 Big Loop #1 (M1: MVP)
-  ├── Ralplan: Plan M1 features only (+ research as needed)
-  ├── Ralph: Implement M1 stories (parallel execution)
-  └── Eval: Auto-verify → update spec → generate learnings
+  ├── Ralplan: Plan M1 (+ idea discovery, design review, cross-model review)
+  ├── Ralph: Implement M1 stories (TDD, worktree, code review, security audit)
+  └── Eval: Auto-verify (5 metrics) + browser QA + sprint retro → learnings
         │
         Mode B: "M1 done (33%). Proceed / modify spec / upgrade?"
         Mode C: 10-second checkpoint → auto-proceed
@@ -136,7 +136,7 @@ upgrade:
 | excalibur | `"excalibur"` | Full project orchestration |
 | deep-interview | (via excalibur) | Project spec co-creation |
 | ralph | `"ralph"` | PRD-driven implementation loop |
-| ralplan | `"ralplan"` | 4-agent consensus planning |
+| ralplan | `"ralplan"` | 6-agent consensus planning |
 | research | `"research"` | Multi-source investigation |
 | setup | `"setup"` | Installation wizard |
 | upgrade | `"upgrade"` | Self-improvement cycle |

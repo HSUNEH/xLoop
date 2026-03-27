@@ -31,7 +31,7 @@ If `--local` or `--global` flag passed, use that. Otherwise ask:
 ## Step 1.4: PRINCIPLES.md checksum
 
 1. If PRINCIPLES.md exists, compute SHA-256 → `.xloop-checksum`
-2. If not exists, skip (will be created in Phase 4 post-MVP)
+2. If not exists, skip (will be created in a future xLoop version)
 
 ## Step 1.5: Git exclude (if git repo)
 

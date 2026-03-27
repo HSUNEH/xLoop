@@ -66,7 +66,7 @@ Big Loop #N (Milestone M{N}):
   │
   ├── Ralplan: Plan THIS milestone only
   │   - Receives: project-spec.json + current milestone + previous learnings
-  │   - 4-agent consensus (Planner + Researcher + Architect + Critic)
+  │   - 6-agent consensus (Planner + Researcher + Architect + Designer + Critic + Cross-Model Reviewer)
   │   - Output: plan-m{N}.md + prd-m{N}.json
   │
   ├── Ralph: Implement THIS milestone's stories

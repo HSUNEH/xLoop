@@ -35,7 +35,7 @@ Keywords bypass the gate: "excalibur", "ralph", "ralplan" route directly.
 |-------|---------|---------|
 | excalibur | "excalibur" | Full project orchestration |
 | ralph | "ralph" | PRD-driven implementation loop |
-| ralplan | "ralplan" | 4-agent consensus planning with integrated research |
+| ralplan | "ralplan" | 6-agent consensus planning with integrated research |
 | research | "research" | Multi-source investigation |
 | deep-interview | (via excalibur) | Project spec co-creation |
 | setup | "setup" | Installation wizard |

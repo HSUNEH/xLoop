@@ -19,7 +19,7 @@ const COMMANDS: Record<string, { description: string; usage: string }> = {
   setup:     { description: 'Install and configure xLoop',          usage: 'xloop setup [--local|--global|--force]' },
   excalibur: { description: 'Full project orchestration (the essence of xLoop)', usage: 'xloop excalibur [autohunt|grab] <description>' },
   ralph:     { description: 'PRD-driven implementation loop',       usage: 'xloop ralph <task>' },
-  ralplan:   { description: '4-agent consensus planning',           usage: 'xloop ralplan <task>' },
+  ralplan:   { description: '6-agent consensus planning',           usage: 'xloop ralplan <task>' },
   research:  { description: 'Multi-source research',                usage: 'xloop research <topic>' },
   upgrade:   { description: 'Self-improvement cycle',               usage: 'xloop upgrade' },
   rollback:  { description: 'Restore from snapshot',                usage: 'xloop rollback [version]' },

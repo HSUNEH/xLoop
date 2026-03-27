@@ -15,7 +15,7 @@ xLoop Setup Complete!
 Getting Started:
   xloop excalibur <description>  — Full project orchestration (the essence of xLoop)
   xloop ralph <task>             — PRD-driven implementation loop
-  xloop ralplan <task>           — 4-agent consensus planning
+  xloop ralplan <task>           — 6-agent consensus planning
 
 Keywords (use naturally):
   "excalibur ..."  → project orchestration
@@ -35,7 +35,7 @@ Save to `~/.claude/.xloop-config.json`:
 ```json
 {
   "setupCompleted": "2026-03-24T...",
-  "setupVersion": "0.1.0",
+  "setupVersion": "0.3.0",
   "testMode": "B",
   "gate": { "simple": 1.5, "medium": 2.2 },
   "configTarget": "local"
