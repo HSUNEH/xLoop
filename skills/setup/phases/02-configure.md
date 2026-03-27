@@ -41,15 +41,20 @@ Complexity Gate defaults:
 
 Save: `{ "gate": { "simple": 1.5, "medium": 2.2 } }`
 
-## Step 2.5: CLI Global Install (optional)
+## Step 2.5: Plugin Verification
 
+Verify xLoop plugin is properly installed:
 ```
-"Install xloop CLI globally? (xloop setup, xloop ralph, etc.)"
-1. Yes [Recommended]
-2. No — install later with: npm install -g xloop
+"xLoop plugin status:"
+  - Marketplace: xloop (HSUNEH/xLoop)
+  - Plugin: xloop@xloop
+  - Version: {current version}
+  - Skills: {count} loaded
+  - Hooks: {count} registered
+  - HUD: active
 ```
 
-If yes: `npm install -g xloop`
+If not installed: "Run `/plugin marketplace add HSUNEH/xLoop` then `/plugin install xloop@xloop`"
 
 ## Save progress
 
