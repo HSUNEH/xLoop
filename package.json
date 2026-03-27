@@ -1,20 +1,16 @@
 {
   "name": "xloop",
   "version": "0.2.0",
-  "description": "xLoop Agent Harness — Research-integrated planning + self-improvement",
+  "description": "xLoop Agent Harness — Claude Code plugin for research-integrated planning + self-improvement",
+  "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "xloop": "dist/src/cli.js"
-  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["agent", "harness", "claude-code", "orchestration"],
+  "keywords": ["agent", "harness", "claude-code", "plugin", "orchestration"],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",

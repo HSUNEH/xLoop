@@ -27,7 +27,7 @@ xLoop is an **agent harness** that orchestrates planning, research, implementati
 ## Excalibur — The Essence of xLoop
 
 ```
-xloop excalibur "build a real-time chat app"
+excalibur "build a real-time chat app"
 ```
 
 One command to orchestrate an entire project:
@@ -110,28 +110,20 @@ What the setup does:
 
 ### Full Project Orchestration
 
-```bash
-xloop excalibur "real-time chat app"
-# → Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 ```
-
-### Individual Commands
-
-```bash
-xloop ralph "fix the auth bug"        # PRD-driven implementation loop
-xloop ralplan "design caching layer"   # 4-agent consensus planning
-xloop research "WebSocket vs SSE"      # Standalone research
-xloop upgrade                          # Self-improvement cycle
-xloop rollback                         # Restore from snapshot
-xloop status                           # Show current state
+excalibur "real-time chat app"
+# → Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 ```
 
 ### Keywords (use naturally in Claude Code)
 
 ```
 "excalibur build a chat app"   → full project orchestration
-"ralph fix this bug"           → implementation loop
-"ralplan design new feature"   → consensus planning
+"ralph fix this bug"           → PRD-driven implementation loop
+"ralplan design new feature"   → 4-agent consensus planning
+"research WebSocket vs SSE"    → standalone research
+"upgrade"                      → self-improvement cycle
+"rollback"                     → restore from snapshot
 ```
 
 ## Complexity Gate
@@ -187,7 +179,7 @@ Ralph complete → Auto-verification (5 metrics) → Threshold check
     Mode C: Auto-upgrade if metrics fail (max 3 cycles)
     │
     ▼
-xloop upgrade:
+upgrade:
   Checksum verify → Snapshot → Ralplan → Ralph → Review gate → Commit
 ```
 
@@ -256,10 +248,9 @@ xLoop combines the best of three systems:
 ## Development
 
 ```bash
-npm install
+npm install                 # install dev dependencies
 npm run typecheck           # tsc --noEmit
 npm test                    # vitest run (94 tests)
-npm run build               # tsc
 ```
 
 ## License

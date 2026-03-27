@@ -27,7 +27,7 @@ xLoop은 기획, 리서치, 구현, 자기개선을 하나의 명령으로 오�
 ## Excalibur — xLoop의 핵심
 
 ```
-xloop excalibur "실시간 채팅 앱 만들기"
+excalibur "실시간 채팅 앱 만들기"
 ```
 
 하나의 명령으로 프로젝트 전체를 오케스트레이션합니다:
@@ -110,28 +110,20 @@ Claude Code에서 아래 명령어를 실행하세요:
 
 ### 전체 프로젝트 오케스트레이션
 
-```bash
-xloop excalibur "실시간 채팅 앱"
-# → Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 ```
-
-### 개별 명령어
-
-```bash
-xloop ralph "인증 버그 수정"          # PRD 기반 구현 루프
-xloop ralplan "캐싱 레이어 설계"      # 4-에이전트 합의 기획
-xloop research "WebSocket vs SSE"     # 단독 리서치
-xloop upgrade                         # 자기개선 사이클
-xloop rollback                        # 스냅샷 복원
-xloop status                          # 현재 상태 표시
+excalibur "실시간 채팅 앱"
+# → Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 ```
 
 ### 키워드 (Claude Code에서 자연스럽게 사용)
 
 ```
 "excalibur 채팅 앱 만들기"     → 전체 프로젝트 오케스트레이션
-"ralph 이 버그 수정"           → 구현 루프
-"ralplan 새 기능 설계"         → 합의 기획
+"ralph 이 버그 수정"           → PRD 기반 구현 루프
+"ralplan 새 기능 설계"         → 4-에이전트 합의 기획
+"research WebSocket vs SSE"    → 단독 리서치
+"upgrade"                      → 자기개선 사이클
+"rollback"                     → 스냅샷 복원
 ```
 
 ## Complexity Gate
@@ -187,7 +179,7 @@ Ralph 완료 → 자동 검증 (5개 메트릭) → 임계값 확인
     Mode C: 메트릭 미달 시 자동 업그레이드 (최대 3사이클)
     │
     ▼
-xloop upgrade:
+upgrade:
   체크섬 검증 → 스냅샷 → Ralplan → Ralph → 리뷰 게이트 → 커밋
 ```
 
@@ -256,10 +248,9 @@ xLoop은 세 시스템의 장점을 결합합니다:
 ## 개발
 
 ```bash
-npm install
+npm install                 # 개발 의존성 설치
 npm run typecheck           # tsc --noEmit
 npm test                    # vitest run (94개 테스트)
-npm run build               # tsc
 ```
 
 ## 라이선스
