@@ -26,35 +26,62 @@ Ralplan creates implementation plans through iterative consensus between Planner
 1. **Planner** (Opus): Creates plans, identifies research needs, incorporates findings
 2. **Researcher** (Sonnet): Investigates specific questions identified by other agents
 3. **Architect** (Opus): Steelman counterargument, tradeoff tensions, synthesis path
-4. **Critic** (Opus): Principle-option consistency, alternative depth, risk/verification rigor
+4. **Designer** (review step): UX/design review — user journey, accessibility, visual consistency
+5. **Critic** (Opus): Principle-option consistency, alternative depth, risk/verification rigor
+6. **Cross-Model Reviewer** (optional): External LLM adversarial review to break single-model blind spots
 </Agents>
 
 <Steps>
-1. **Planner**: Initial plan draft + identifies specific research questions (not broad topics)
+<!-- Inspired by: gstack /design-review, ARIS cross-model review, ARIS idea-discovery -->
 
-2. **Researcher**: Investigates Planner's questions in parallel (web, arxiv, docs)
+1. **Idea Discovery** (optional, `--discover`):
+   <!-- Inspired by: ARIS idea-discovery (https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) -->
+   - Before planning, Researcher explores adjacent approaches and alternatives
+   - Survey existing solutions, libraries, patterns for this problem space
+   - Output: expanded option set (5+ approaches) ranked by feasibility
+   - Feeds into Planner's initial draft as additional context
+
+2. **Planner**: Initial plan draft + identifies specific research questions (not broad topics)
+
+3. **Researcher**: Investigates Planner's questions in parallel (web, arxiv, docs)
    - Results cached and shared across the ralplan loop
    - Each source adapter fails independently (returns partial results, not error)
 
-3. **Planner**: Incorporates research findings into revised plan + RALPLAN-DR summary
+4. **Planner**: Incorporates research findings into revised plan + RALPLAN-DR summary
    - Principles (3-5), Decision Drivers (top 3), Viable Options (>=2)
 
-4. **Architect**: Reviews for architectural soundness
+5. **Architect**: Reviews for architectural soundness
    - Steelman counterargument against favored option
    - At least one tradeoff tension + synthesis path
    - Can request additional research → Researcher investigates → Architect re-evaluates
 
-5. **Critic**: Evaluates against quality criteria
+6. **Design Review** (when project has UI):
+   <!-- Inspired by: gstack /design-review (https://github.com/garrytan/gstack) -->
+   - Is the user journey natural and complete? Any missing steps?
+   - Are interactions intuitive? Would a first-time user get stuck?
+   - Accessibility: keyboard navigation, screen reader support, color contrast
+   - Visual consistency: spacing, typography, component reuse
+   - If no UI involved, skip this step
+
+7. **Cross-Model Review** (optional, `--cross-review`):
+   <!-- Inspired by: ARIS cross-model adversarial review (https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) -->
+   - Send the plan to an external LLM (GPT, Gemini, etc.) as adversarial reviewer
+   - External LLM's job: "Find the weakest assumption in this plan"
+   - Findings fed back to Planner for revision before Critic
+   - **Fallback**: If no external LLM configured, Claude takes an adversarial stance:
+     "Argue against this plan as if you were a competing architect"
+
+8. **Critic**: Evaluates against quality criteria
    - Principle-option consistency, fair alternative exploration
    - Risk mitigations specific and actionable
    - 90%+ acceptance criteria are testable
    - Can request additional research → Researcher investigates → Critic re-evaluates
 
-6. **If Critic rejects**: Planner revises (may request new research) → back to Step 4
+9. **If Critic rejects**: Planner revises (may request new research) → back to Step 5
    - Max 5 iterations total
    - Max 2 research requests per agent per iteration
 
-7. **On approval**: Save plan to `.xloop/plans/`, output ADR
+10. **On approval**: Save plan to `.xloop/plans/`, output ADR
 
 </Steps>
 

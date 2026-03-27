@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="v0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.2.0">
 </p>
 
 <p align="center">
@@ -33,6 +33,8 @@ In Claude Code, run:
 /plugin marketplace add HSUNEH/xLoop
 /plugin install xloop@xloop
 ```
+
+The plugin includes a **HUD (status line)** that shows: folder, git branch, context usage, tool/agent/skill call counts, active plan name, and 5h rate limit.
 
 ### 2. Use
 
@@ -140,18 +142,23 @@ upgrade:
 | upgrade | `"upgrade"` | Self-improvement cycle |
 | rollback | `"rollback"` | Snapshot restore |
 
-## Design Decisions
+## Inspirations & Credits
 
-xLoop combines the best of three systems:
+xLoop's Excalibur is a meta-orchestrator that absorbs the best ideas from 7 open-source projects:
 
-| Source | What xLoop Takes | What xLoop Leaves |
-|--------|-----------------|-------------------|
-| **OMC** | Plugin/skill/hook architecture, Ralph PRD loop, Ralplan consensus, MCP integration | 179K compiled lines, 19 agents, excessive hook injection |
-| **Ouroboros (razzant)** | Self-modification concept, constitutional governance, multi-model review | Colab dependency, unlimited self-mod, no rollback |
-| **Ouroboros (Q00)** | Ambiguity scoring inspiration, specification-first approach | 166 Python modules, no fast path, immutable specs |
+| Source | What xLoop Takes | Excalibur Stage |
+|--------|-----------------|----------------|
+| [**OMC**](https://github.com/Yeachan-Heo/oh-my-claudecode) | Plugin/skill/hook architecture, Ralph PRD loop, Ralplan consensus | Foundation |
+| [**Ouroboros**](https://github.com/Q00/ouroboros) | Self-improvement concept, constitutional governance, multi-model review | Upgrade |
+| [**gstack**](https://github.com/garrytan/gstack) | Office Hours reframing, Design Review, Code Review, Security Audit (CSO), Browser QA, Sprint Retro | Interview, Ralplan, Ralph, Eval |
+| [**superpowers**](https://github.com/obra/superpowers) | TDD (Red-Green-Refactor), git worktree isolation, fresh subagent per task, 4-phase debugging | Ralph |
+| [**ARIS**](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) | Cross-model adversarial review, idea discovery pipeline | Ralplan |
+| [**autoresearch**](https://github.com/karpathy/autoresearch) | Modify→eval→keep/discard experiment loop | Upgrade |
+| [**notebooklm-py**](https://github.com/nichochar/notebooklm-py) | NotebookLM API for source aggregation and synthesis | Research |
 
 ### Key Differentiators
 
+- **Meta-Orchestrator**: Absorbs ideas into SKILL.md — no runtime plugin dependency
 - **Complexity Gate**: Bidirectional routing — scales DOWN for simple tasks, not just up
 - **Research-Integrated Planning**: Research within the planning loop, not as a separate pre-step
 - **Milestone-Scoped Execution**: Plan one chunk at a time, not the whole project

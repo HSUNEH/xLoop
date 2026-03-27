@@ -30,6 +30,40 @@ Ralph keeps working on a task until ALL user stories in prd.json have passes: tr
 - Deliver full implementation: no scope reduction, no partial completion
 </Execution_Policy>
 
+<TDD_Mode>
+<!-- Inspired by: superpowers TDD (https://github.com/obra/superpowers) -->
+When invoked with `--tdd` flag, enforce Red-Green-Refactor for every story:
+
+1. **RED**: Write tests FIRST that describe the expected behavior. Run them — they MUST fail.
+2. **GREEN**: Write minimal implementation to make tests pass. No extra code.
+3. **REFACTOR**: Clean up while keeping tests green. Remove duplication.
+
+Rules:
+- Code written before tests → delete it and restart from RED
+- Each story must have at least one test before implementation begins
+- If `--tdd` is not set, normal execution (tests encouraged but not enforced)
+</TDD_Mode>
+
+<Worktree_Isolation>
+<!-- Inspired by: superpowers git worktree (https://github.com/obra/superpowers) -->
+When working within excalibur (milestone-scoped execution):
+- Create a git worktree on a new branch for this milestone
+- Run project setup in the worktree, verify clean test baseline
+- All implementation happens in the worktree — main branch untouched
+- On milestone completion: merge worktree branch back to main
+- On failure: worktree can be discarded without affecting main
+- If git worktree is unavailable, fall back to normal branch workflow
+</Worktree_Isolation>
+
+<Fresh_Subagent>
+<!-- Inspired by: superpowers fresh subagent per task (https://github.com/obra/superpowers) -->
+For multi-story execution, each story gets a fresh executor agent:
+- New agent receives only: story spec + relevant code context + test results
+- Previous story's conversation history is NOT carried over
+- Prevents context drift during long autonomous sessions
+- State is preserved via prd.json and ralph-state.json, not agent memory
+</Fresh_Subagent>
+
 <Steps>
 1. **PRD Setup** (first iteration only):
    a. Check if `prd.json` exists. If yes, read and proceed to Step 2.
@@ -55,12 +89,38 @@ Ralph keeps working on a task until ALL user stories in prd.json have passes: tr
 
 6. **Check completion**: All stories `passes: true`? If not, loop to Step 2.
 
-7. **Reviewer verification**: Verifier or architect reviews against specific acceptance criteria from prd.json.
+7. **Code Review**:
+   <!-- Inspired by: gstack /review (https://github.com/garrytan/gstack) -->
+   - Dedicated reviewer checks: plan compliance, performance, maintainability
+   - Review the diff, not the whole file — focus on what changed
 
-8. **On approval**: Clean state and report completion.
+8. **Security Audit**:
+   <!-- Inspired by: gstack /cso (https://github.com/garrytan/gstack) -->
+   - Check OWASP Top 10: injection, auth bypass, XSS, CSRF, data exposure
+   - Validate input sanitization on all user-facing endpoints
+   - If no security concerns found, pass silently (no noise)
 
-9. **On rejection**: Fix issues, re-verify, loop back.
+9. **Reviewer verification**: Verifier or architect reviews against specific acceptance criteria from prd.json.
+
+10. **On approval**: Clean state and report completion.
+
+11. **On rejection**: Fix issues, re-verify, loop back.
 </Steps>
+
+<Debug_Protocol>
+<!-- Inspired by: superpowers 4-phase debugging (https://github.com/obra/superpowers) -->
+When a test or verification fails, follow this 4-step protocol:
+
+1. **Reproduce**: Create a minimal reproduction of the failure. Write a test that triggers it.
+2. **Isolate**: Narrow down to the specific module/function. Binary search if needed.
+3. **Root Cause**: Identify WHY it fails, not just WHERE. Check assumptions.
+4. **Fix**: Apply the minimal fix. Verify the reproduction test now passes.
+
+Rules:
+- Do NOT guess-and-check. Always reproduce first.
+- Do NOT fix symptoms. Find the root cause.
+- If stuck after 3 iterations, escalate as potential fundamental problem.
+</Debug_Protocol>
 
 <OMC_Pattern_Checklist>
 Executor must verify each during ralph SKILL.md authoring:

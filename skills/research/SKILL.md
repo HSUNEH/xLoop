@@ -20,6 +20,13 @@ Investigate specific questions using multiple sources. Primary role: ralplan-int
 - **Web search**: General web via WebSearch tool (1h cache TTL)
 - **ArXiv**: Academic papers via ArXiv API (24h cache TTL)
 - **Documentation**: Project docs, library docs via WebFetch (1h cache TTL)
+- **NotebookLM**: Google NotebookLM via notebooklm-py API (on-demand, no cache)
+  <!-- Inspired by: notebooklm-py (https://github.com/nichochar/notebooklm-py) -->
+  - Add sources (URLs, docs, papers) to a notebook automatically
+  - Query the notebook for synthesized answers across all sources
+  - Generate audio overviews for complex topics
+  - Requires: notebooklm-py installed + Google OAuth configured
+  - If unavailable, skip silently — other sources proceed normally
 </Sources>
 
 <Error_Boundaries>

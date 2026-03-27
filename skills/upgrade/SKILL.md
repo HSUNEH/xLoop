@@ -23,7 +23,14 @@ It MUST NOT modify host project source code.
    - Scope: xLoop internals only
 4. **Ralph**: Implement the improvement plan.
 5. **Review gate**: Architect + Critic verify changes before commit.
-6. **Commit**: Apply changes, update `.xloop/evolution.json`.
+6. **Experiment loop** (autoresearch pattern):
+   <!-- Inspired by: Karpathy autoresearch (https://github.com/karpathy/autoresearch) -->
+   - **Modify**: Apply the planned change to xLoop files
+   - **Eval**: Run auto-verification (5 metrics) on the modified version
+   - **Keep/Discard**: If metrics improved → `git commit` (keep). If not → `git revert` (discard).
+   - Repeat for each independent improvement in the plan
+   - This ensures only proven improvements survive — no regressions
+7. **Commit**: Finalize kept changes, update `.xloop/evolution.json`.
 
 On failure at any step → `xloop rollback` to restore from snapshot.
 </Steps>

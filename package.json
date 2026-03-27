@@ -1,6 +1,6 @@
 {
   "name": "xloop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "xLoop Agent Harness — Claude Code plugin for research-integrated planning + self-improvement",
   "private": true,
   "type": "module",

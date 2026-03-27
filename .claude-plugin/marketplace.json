@@ -9,7 +9,7 @@
     {
       "name": "xloop",
       "description": "Agent harness that orchestrates planning, research, implementation, and self-improvement. 7 agents, 8 skills, Complexity Gate routing, milestone-scoped execution.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": {
         "name": "HSUNEH"
       },
@@ -26,5 +26,5 @@
       ]
     }
   ],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

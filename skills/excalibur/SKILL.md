@@ -22,8 +22,27 @@ One command to orchestrate an entire project. Deep Interview creates a perfect s
 - User just wants implementation without planning — use ralph
 </Do_Not_Use_When>
 
-<Phase_0_Deep_Interview>
-Invokes the `deep-interview` skill to co-create a project spec with the user.
+<Phase_0a_Office_Hours>
+<!-- Inspired by: gstack /office-hours (https://github.com/garrytan/gstack) -->
+Before diving into spec creation, reframe the project at a product level.
+
+**Office Hours Questions** (ask one at a time):
+- "Why does this need to exist? What problem are you solving?"
+- "Who is the core user? What does their day look like without this?"
+- "What existing alternatives have you considered? Why aren't they enough?"
+- "What is the single most important thing this must do on day one?"
+- "What would make you say 'this failed' six months from now?"
+
+**Rules**:
+- Push back on framing — don't just accept feature requests
+- If the user's idea can be solved simpler, say so
+- Output: refined problem statement + success criteria
+- User says "enough reframing" or answers feel solid → proceed to Deep Interview
+- User says "skip" → go directly to Deep Interview
+</Phase_0a_Office_Hours>
+
+<Phase_0b_Deep_Interview>
+Invokes the `deep-interview` skill to co-create a project spec with the user, informed by the reframed problem statement from Office Hours.
 
 **Rules**:
 - One question at a time — never batch questions
@@ -35,7 +54,7 @@ Invokes the `deep-interview` skill to co-create a project spec with the user.
 Saved to `.xloop/specs/project-spec.json`.
 
 User confirms: "This spec looks good? [Y/modify/cancel]"
-</Phase_0_Deep_Interview>
+</Phase_0b_Deep_Interview>
 
 <Big_Loop>
 Each iteration handles ONE milestone. Does not plan the whole project at once.
@@ -54,7 +73,9 @@ Big Loop #N (Milestone M{N}):
   │
   ├── Eval: Check progress
   │   - Auto-verification (5 metrics)
+  │   - Browser QA: if available, test the running app in a real browser
   │   - Update project-spec.json feature statuses
+  │   - Sprint Retro: what worked, what didn't, what to change
   │   - Generate learnings → .xloop/learnings/loop-{N}.json
   │
   └── Checkpoint (mode-dependent):
@@ -62,6 +83,21 @@ Big Loop #N (Milestone M{N}):
       Mode C: 10-second checkpoint — input = modify, no input = auto-proceed
 ```
 </Big_Loop>
+
+<Eval_Enhanced>
+<!-- Inspired by: gstack /browse, /qa, /retro (https://github.com/garrytan/gstack) -->
+
+**Browser QA** (optional — when the project has a UI):
+- Launch the app and verify key user flows in a real browser
+- Check visual rendering, navigation, form submissions
+- If browser tools are unavailable, fall back to code-level verification only
+
+**Sprint Retro** (after every milestone):
+- What went well? (keep doing)
+- What went wrong? (stop doing)
+- What to try next? (experiment)
+- Retro findings are merged into learnings for the next Ralplan
+</Eval_Enhanced>
 
 <Learnings>
 After each big loop, auto-generate learnings:

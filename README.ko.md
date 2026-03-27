@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/claude_code-plugin-blueviolet" alt="Claude Code Plugin">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/version-0.2.0-orange" alt="v0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-orange" alt="v0.2.0">
 </p>
 
 <p align="center">
@@ -33,6 +33,8 @@ Claude Code에서 실행:
 /plugin marketplace add HSUNEH/xLoop
 /plugin install xloop@xloop
 ```
+
+플러그인에는 **HUD (상태 표시줄)**가 포함되어 있습니다: 폴더, git 브랜치, 컨텍스트 사용량, 도구/에이전트/스킬 호출 수, 활성 플랜명, 5시간 rate limit을 표시합니다.
 
 ### 2. 사용
 
@@ -140,18 +142,23 @@ upgrade:
 | upgrade | `"upgrade"` | 자기개선 사이클 |
 | rollback | `"rollback"` | 스냅샷 복원 |
 
-## 설계 결정
+## 영감 & 크레딧
 
-xLoop은 세 시스템의 장점을 결합합니다:
+xLoop의 Excalibur는 7개 오픈소스 프로젝트의 핵심 아이디어를 흡수한 메타 오케스트레이터입니다:
 
-| 출처 | xLoop이 취한 것 | xLoop이 버린 것 |
-|------|----------------|----------------|
-| **OMC** | 플러그인/스킬/Hook 아키텍처, Ralph PRD 루프, Ralplan 합의, MCP 통합 | 179K 컴파일 라인, 19개 에이전트, 과도한 Hook 주입 |
-| **Ouroboros (razzant)** | 자기수정 개념, 헌법적 거버넌스, 멀티 모델 리뷰 | Colab 의존, 무제한 자기수정, 롤백 없음 |
-| **Ouroboros (Q00)** | 모호성 스코어링 영감, 스펙 우선 접근 | 166개 Python 모듈, 빠른 경로 없음, 불변 스펙 |
+| 출처 | xLoop이 가져온 것 | Excalibur 단계 |
+|------|------------------|---------------|
+| [**OMC**](https://github.com/Yeachan-Heo/oh-my-claudecode) | 플러그인/스킬/Hook 아키텍처, Ralph PRD 루프, Ralplan 합의 | 기반 |
+| [**Ouroboros**](https://github.com/Q00/ouroboros) | 자기개선 개념, 헌법적 거버넌스, 멀티 모델 리뷰 | Upgrade |
+| [**gstack**](https://github.com/garrytan/gstack) | Office Hours 리프레이밍, Design Review, Code Review, 보안 감사(CSO), 브라우저 QA, 스프린트 회고 | Interview, Ralplan, Ralph, Eval |
+| [**superpowers**](https://github.com/obra/superpowers) | TDD (Red-Green-Refactor), git worktree 격리, fresh subagent, 4단계 디버깅 | Ralph |
+| [**ARIS**](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) | Cross-model adversarial review, 아이디어 발굴 파이프라인 | Ralplan |
+| [**autoresearch**](https://github.com/karpathy/autoresearch) | Modify→eval→keep/discard 실험 루프 | Upgrade |
+| [**notebooklm-py**](https://github.com/nichochar/notebooklm-py) | NotebookLM API 소스 수집 및 합성 | Research |
 
 ### 핵심 차별점
 
+- **메타 오케스트레이터**: 아이디어를 SKILL.md에 흡수 — 런타임 플러그인 의존성 없음
 - **Complexity Gate**: 양방향 라우팅 — 단순 작업은 아래로 축소, 복잡한 작업만 위로 확장
 - **리서치 통합 기획**: 별도 사전 단계가 아닌 기획 루프 안에서 리서치 수행
 - **마일스톤 단위 실행**: 전체 프로젝트가 아닌 한 번에 하나의 청크만 기획
