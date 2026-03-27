@@ -13,7 +13,9 @@ const KEYWORDS = {
   'opportunity-scout': 'xloop:opportunity-scout',
   'opportunity scout': 'xloop:opportunity-scout',
   'youtube-transcript': 'xloop:youtube-transcript',
-  'youtube transcript': 'xloop:youtube-transcript'
+  'youtube transcript': 'xloop:youtube-transcript',
+  'slide-generator': 'xloop:slide-generator',
+  'slide generator': 'xloop:slide-generator'
 }
 
 // Pattern-based detection (regex → skill)
@@ -33,10 +35,18 @@ const PATTERNS = [
   },
   // Natural language about trends/opportunities
   {
-    test: () => /(?:트렌드|기회|아이디어|사이드\s*프로젝트).{0,20}(?:추천|탐색|찾|분석|조사)/.test(lower)
-      || /(?:뭐가? 좋을까|뭐 ?만들|뭐 ?할까|주제 ?추천)/.test(lower),
+    test: () => /(?:기회|아이디어|사이드\s*프로젝트).{0,20}(?:추천|탐색|찾|분석|조사)/.test(lower)
+      || /(?:트렌드).{0,20}(?:추천|탐색|찾|조사)/.test(lower)
+      || /(?:뭐가? 좋을까|뭐 ?할까|주제 ?추천)/.test(lower),
     keyword: 'opportunity-hint',
     skill: 'xloop:opportunity-scout'
+  },
+  // Natural language about slide/PPT creation
+  {
+    test: () => /(?:ppt|pptx|슬라이드|발표\s*자료|프레젠테이션|presentation).{0,20}(?:만들|생성|제작|변환)/.test(lower)
+      || /(?:만들|생성|제작).{0,20}(?:ppt|pptx|슬라이드|발표\s*자료|프레젠테이션)/.test(lower),
+    keyword: 'slide-hint',
+    skill: 'xloop:slide-generator'
   }
 ]
 

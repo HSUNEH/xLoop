@@ -68,6 +68,7 @@ Deep Interview → (Ralplan + Ralph + Eval) × N milestones → Done
 
 | Keyword | What it does |
 |---------|-------------|
+| `slide-generator "..."` | Auto-generate presentations (research → outline → HTML design → PPTX) |
 | `opportunity-scout "..."` | Trend-driven idea discovery (Google Trends + GitHub + YouTube + marketing frameworks) |
 | `youtube-transcript <URL>` | Extract subtitles from YouTube videos (multi-language, 2-pass download) |
 | `setup` | Installation wizard (CLAUDE.md, MCP server, config) |
@@ -141,7 +142,7 @@ upgrade:
 | designer | Sonnet | UX/UI design review, component design |
 | explorer | Haiku | Codebase search, quick lookups |
 
-### Skills (10)
+### Skills (11)
 
 #### Core — Excalibur Pipeline
 
@@ -159,6 +160,7 @@ upgrade:
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
+| slide-generator | `"slide-generator"` / `"PPT 만들어줘"` | Auto-generate presentations (research → outline → HTML design → PPTX) |
 | opportunity-scout | `"opportunity-scout"` | Trend-driven idea discovery with marketing framework analysis |
 | youtube-transcript | `"youtube-transcript"` | YouTube subtitle extraction (ko/en/ja, manual + auto-generated) |
 | setup | `"setup"` | Installation wizard (CLAUDE.md, MCP server, config) |

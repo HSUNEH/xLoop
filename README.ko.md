@@ -68,6 +68,7 @@ Deep Interview → (Ralplan + Ralph + Eval) × N 마일스톤 → 완료
 
 | 키워드 | 기능 |
 |--------|------|
+| `slide-generator "..."` / `"PPT 만들어줘"` | 프레젠테이션 자동 생성 (리서치 → 구조화 → HTML 디자인 → PPTX) |
 | `opportunity-scout "..."` | 트렌드 기반 기회 탐색 (Google Trends + GitHub + YouTube + 마케팅 프레임워크) |
 | `youtube-transcript <URL>` | YouTube 영상 자막 추출 (다국어, 수동+자동생성 2-pass) |
 | `setup` | 설치 마법사 (CLAUDE.md, MCP 서버, 설정) |
@@ -141,7 +142,7 @@ upgrade:
 | designer | Sonnet | UX/UI 디자인 리뷰, 컴포넌트 설계 |
 | explorer | Haiku | 코드베이스 검색, 빠른 조회 |
 
-### 스킬 (10개)
+### 스킬 (11개)
 
 #### 코어 — Excalibur 파이프라인
 
@@ -159,6 +160,7 @@ upgrade:
 
 | 스킬 | 트리거 | 용도 |
 |------|--------|------|
+| slide-generator | `"slide-generator"` / `"PPT 만들어줘"` | 프레젠테이션 자동 생성 (리서치 → 구조화 → HTML 디자인 → PPTX) |
 | opportunity-scout | `"opportunity-scout"` | 트렌드 기반 기회 탐색 + 마케팅 프레임워크 분석 |
 | youtube-transcript | `"youtube-transcript"` | YouTube 자막 추출 (ko/en/ja, 수동+자동생성) |
 | setup | `"setup"` | 설치 마법사 (CLAUDE.md, MCP 서버, 설정) |
