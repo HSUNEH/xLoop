@@ -27,15 +27,11 @@ Save to `~/.claude/.xloop-config.json` → `{ "testMode": "B" | "C" }`
 
 ## Step 2.3: MCP Server
 
-MCP server is **auto-registered** by the `Setup` hook on plugin install.
-Verify it's registered:
-```bash
-claude mcp list | grep xloop
-```
+MCP server is **auto-registered** via `.mcp.json` on plugin install. No manual steps required.
 
-If missing, register manually:
-```bash
-claude mcp add xloop -- node "$CLAUDE_PLUGIN_ROOT/src/mcp-server.ts"
+Verify it's connected:
+```
+/plugin  →  xloop should show "MCP · ✓ connected"
 ```
 
 Provides tools: xloop_state_read/write/clear/list, xloop_notepad_read/write, xloop_prd_generate

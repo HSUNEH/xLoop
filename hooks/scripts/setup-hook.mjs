@@ -1,30 +1,18 @@
-// Setup: Runs once on plugin install — registers MCP server
-import { execSync } from 'node:child_process'
+// Setup: Runs once on plugin install — create .xloop/ directories
+import { mkdirSync, existsSync } from 'node:fs'
 
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT
-if (!pluginRoot) {
-  console.log('hook success: skipped (no CLAUDE_PLUGIN_ROOT)')
-  process.exit(0)
+const dirs = [
+  '.xloop/state/sessions',
+  '.xloop/plans',
+  '.xloop/research/cache',
+  '.xloop/reports',
+  '.xloop/snapshots',
+  '.xloop/learnings',
+  '.xloop/specs'
+]
+
+for (const dir of dirs) {
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 }
 
-try {
-  // Check if xloop MCP server is already registered
-  const list = execSync('claude mcp list', { encoding: 'utf8', timeout: 5000 })
-  if (list.includes('xloop')) {
-    console.log('hook success: xLoop MCP server already registered')
-    process.exit(0)
-  }
-} catch {
-  // claude CLI not available or mcp list failed — skip gracefully
-}
-
-try {
-  execSync(
-    `claude mcp add xloop -- node "${pluginRoot}/src/mcp-server.ts"`,
-    { encoding: 'utf8', timeout: 10000 }
-  )
-  console.log('hook success: xLoop MCP server registered')
-} catch (err) {
-  console.error(`MCP registration failed: ${err.message}`)
-  console.log('hook success: setup completed (MCP registration skipped)')
-}
+console.log('hook success: xLoop setup complete')
